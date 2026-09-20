@@ -56,6 +56,27 @@
     <div id="line-editor" hidden></div>
 
     <fieldset class="path-picker">
+      <legend>Your data needs (all plans include unlimited calls &amp; texts)</legend>
+      <label>Fast data per line, monthly
+        <select id="in-datause">
+          <option value="light" selected>Light — under 5GB, OK if slowed when towers are busy</option>
+          <option value="moderate">Moderate — 5–30GB at full priority</option>
+          <option value="heavy">Heavy — 30–75GB at full priority</option>
+          <option value="maximum">Maximum — always-unlimited priority data</option>
+        </select>
+      </label>
+      <label>High-speed hotspot needed
+        <select id="in-hotspot">
+          <option value="0" selected>None</option>
+          <option value="15">Up to 15GB</option>
+          <option value="60">Up to 60GB</option>
+          <option value="150">150GB or more</option>
+        </select>
+      </label>
+      <label class="check"><input id="in-intl" type="checkbox"> I use my phone internationally</label>
+    </fieldset>
+
+    <fieldset class="path-picker">
       <legend>Device options to compare</legend>
       <label class="check"><input class="path-option" type="checkbox" value="carrier" checked> Finance through carrier</label>
       <label class="check"><input class="path-option" type="checkbox" value="mfr" checked> Finance through manufacturer</label>
@@ -66,6 +87,7 @@
   </form>
 
   <div class="banner" id="availability-note" hidden></div>
+  <div class="banner" id="needs-note" hidden></div>
 
   <div id="best-pick"></div>
 
@@ -92,6 +114,17 @@
       <tbody id="results-body"></tbody>
     </table>
   </div>
+
+  <details class="plan-defs">
+    <summary>Plan definitions used by the needs assessment (collected <span id="defs-date"></span>)</summary>
+    <div id="plan-defs-body"></div>
+    <p class="defs-note">
+      Plan types change infrequently; a weekly scheduled check opens a
+      reminder issue to verify them. To update, edit the <code>features</code>
+      blocks in <code>data/offers.js</code> — values marked * were not stated
+      directly by the source.
+    </p>
+  </details>
 
   <footer>
     <p id="qci-legend" hidden></p>

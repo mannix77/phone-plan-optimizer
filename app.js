@@ -89,6 +89,11 @@ function readInputs() {
     lines,
     lineConfigs,
     paths,
+    needs: {
+      dataUse: $("in-datause").value,
+      hotspotGB: Number($("in-hotspot").value),
+      international: $("in-intl").checked,
+    },
     includeMvnos: $("in-mvnos").checked,
     feesPerLine: Number($("in-fees").value) || 0,
   };
@@ -165,8 +170,25 @@ function rowDetail(r, input) {
 
 function render() {
   const input = readInputs();
-  const { rows, deviceLines } = computeScenarios(ENGINE_DATA, input);
+  const { rows, deviceLines, excludedByNeeds } = computeScenarios(ENGINE_DATA, input);
   availabilityNotice(deviceLines, input);
+
+  const needsNote = $("needs-note");
+  if (excludedByNeeds.length) {
+    needsNote.hidden = false;
+    needsNote.innerHTML =
+      `${excludedByNeeds.length} plan(s) don't meet your data needs and are hidden: ` +
+      excludedByNeeds.map((p) => `${p.carrier} ${p.name}`).join(", ") + ".";
+  } else {
+    needsNote.hidden = true;
+  }
+
+  if (rows.length === 0) {
+    $("best-pick").innerHTML = `<div class="best-main">No plan in the data meets these needs — relax a requirement to see options.</div>`;
+    $("results-body").innerHTML = "";
+    $("estimate-note").hidden = true;
+    return;
+  }
   const best = rows[0];
 
   const deviceSummary =
@@ -177,7 +199,7 @@ function render() {
         : `${deviceLines.length} new device(s)`;
 
   $("best-pick").innerHTML = `
-    <div class="best-label">Lowest true 24-month cost for ${input.lines} line(s), ${deviceSummary}</div>
+    <div class="best-label">Lowest true 24-month cost among plans matching your needs — ${input.lines} line(s), ${deviceSummary}</div>
     <div class="best-main">${best.plan.carrier} ${best.plan.name} · ${best.pathLabel}</div>
     <div class="best-total">${money(best.effective24)}<span class="best-per"> true cost · ${money(best.total24)} paid in 24 mo${best.owedAt24 > 0 ? ` + ${money(best.owedAt24)} device payoff` : ""} · ${money2(best.total24 / 24)}/mo average</span></div>
     ${deviceLines.length ? `<div class="best-path-note">${best.pathKey === "byod" ? "" : `Best way to get the device${input.lines > 1 ? "s" : ""} here: <strong>${best.pathLabel.toLowerCase()}</strong>. Each plan's best path is tagged in the table.`}</div>` : ""}
@@ -220,6 +242,16 @@ function render() {
       `This offer data is ${days} days old and past its monthly refresh window — treat results as directional and verify current pricing.`;
   }
 })();
+
+// Plan-definitions reference panel: what the needs assessment matches on.
+$("defs-date").textContent = DATA_RETRIEVED;
+$("plan-defs-body").innerHTML = PLANS.map((p) => {
+  const f = p.features || {};
+  const est = new Set(f.estimatedFeatures || []);
+  const mark = (field, text) => text + (est.has(field) ? "*" : "");
+  const premium = f.premiumData === "unlimited" ? "unlimited priority data" : f.premiumData ? `${f.premiumData}GB priority data` : "no priority data";
+  return `<p><strong>${p.carrier} ${p.name}</strong> — ${mark("premiumData", premium)} · ${mark("hotspotGB", `${f.hotspotGB}GB high-speed hotspot`)} · ${mark("international", f.international ? "international included" : "no international")}${f.note ? ` <span class="defs-detail">(${f.note})</span>` : ""}</p>`;
+}).join("");
 
 $("in-device").innerHTML = DEVICES.map(
   (d, i) => `<option value="${d.id}" ${i === 0 ? "selected" : ""}>${d.name}</option>`

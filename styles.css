@@ -254,6 +254,19 @@ details summary {
 .detail p { margin: 6px 0; font-size: 0.82rem; color: var(--muted); }
 .detail a { color: var(--accent); }
 
+.plan-defs {
+  margin-top: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.plan-defs summary { cursor: pointer; color: var(--accent); font-size: 0.9rem; font-weight: 600; }
+.plan-defs p { margin: 8px 0; font-size: 0.85rem; }
+.plan-defs .defs-detail { color: var(--muted); }
+.plan-defs .defs-note { color: var(--muted); font-size: 0.8rem; }
+.plan-defs code { font-size: 0.78rem; background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+
 footer {
   margin-top: 18px;
   font-size: 0.82rem;

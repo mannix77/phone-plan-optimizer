@@ -10,18 +10,18 @@ Feature: Device purchase path calculations
 
   Scenario: Carrier financing with no promo spreads retail over 36 months
     When the scenarios are computed
-    Then the "AT&T Value 2.0" row for "carrier" has devices paid of 532.67
-    And the "AT&T Value 2.0" row for "carrier" has owed at month 24 of 266.33
+    Then the "AT&T Value 2.0" row for "carrier" has devices paid of 599.33
+    And the "AT&T Value 2.0" row for "carrier" has owed at month 24 of 299.67
     And the "AT&T Value 2.0" row for "carrier" has upfront of 0.00
 
   Scenario: Manufacturer financing with no trade-in pays retail with nothing owed
     When the scenarios are computed
-    Then the "AT&T Value 2.0" row for "mfr" has devices paid of 799.00
+    Then the "AT&T Value 2.0" row for "mfr" has devices paid of 899.00
     And the "AT&T Value 2.0" row for "mfr" has owed at month 24 of 0.00
 
   Scenario: Buying outright is due upfront
     When the scenarios are computed
-    Then the "AT&T Value 2.0" row for "outright" has upfront of 799.00
+    Then the "AT&T Value 2.0" row for "outright" has upfront of 899.00
 
   Scenario: The lease path uses the program's monthly price for 24 months
     When the scenarios are computed
@@ -36,7 +36,7 @@ Feature: Device purchase path calculations
   Scenario: A manufacturer trade-in reduces the outright price
     Given 1 line with a new "iPhone 17 (256GB)" and an "older" trade-in
     When the scenarios are computed
-    Then the "AT&T Value 2.0" row for "outright" has upfront of 599.00
+    Then the "AT&T Value 2.0" row for "outright" has upfront of 699.00
 
   Scenario: A device with no lease offer produces no lease rows
     Given 1 line with a new "Galaxy S26 (256GB)" and no trade-in
@@ -63,4 +63,13 @@ Feature: Device purchase path calculations
   Scenario: Device costs multiply by the number of lines getting a device
     Given 3 lines where 2 get a new "iPhone 17 (256GB)" and no trade-in
     When the scenarios are computed
-    Then the "AT&T Value 2.0" row for "mfr" has devices paid of 1598.00
+    Then the "AT&T Value 2.0" row for "mfr" has devices paid of 1798.00
+
+  Scenario: A Pixel financed through Google pays retail with nothing owed
+    Given 1 line with a new "Pixel 10 (128GB)" and no trade-in
+    When the scenarios are computed
+    Then the "AT&T Value 2.0" row for "mfr" has devices paid of 799.00
+    And the "AT&T Value 2.0" row for "mfr" has owed at month 24 of 0.00
+
+  Scenario: The device catalog covers Apple, Samsung, and Google
+    Then the device catalog includes at least 8 devices from at least 3 makers

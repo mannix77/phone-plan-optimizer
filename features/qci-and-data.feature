@@ -34,3 +34,6 @@ Feature: QCI reference and offer data integrity
 
   Scenario: The data files record valid retrieval dates
     Then the offer and QCI retrieval dates are valid dates
+
+  Scenario: Every plan defines the features the needs assessment asks about
+    Then every plan has a complete features block with an https source

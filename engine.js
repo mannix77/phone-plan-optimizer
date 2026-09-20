@@ -26,6 +26,23 @@
 
 const TIER_RANK = { base: 0, mid: 1, top: 2 };
 
+// Priority-data GB a plan must offer for each stated level of data use.
+// "maximum" demands unlimited premium data.
+const DATA_NEED_GB = { light: 0, moderate: 30, heavy: 75, maximum: Infinity };
+
+// Does a plan's published feature set meet the user's stated needs?
+// needs = { dataUse: "light"|"moderate"|"heavy"|"maximum",
+//           hotspotGB: number, international: boolean } (or absent = no filter).
+function matchesNeeds(plan, needs) {
+  if (!needs) return true;
+  const f = plan.features || {};
+  const premium = f.premiumData === "unlimited" ? Infinity : f.premiumData || 0;
+  if (premium < DATA_NEED_GB[needs.dataUse]) return false;
+  if ((f.hotspotGB || 0) < (needs.hotspotGB || 0)) return false;
+  if (needs.international && !f.international) return false;
+  return true;
+}
+
 const money = (n) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const money2 = (n) =>
@@ -124,12 +141,17 @@ function planCost24(plan, lines, feesPerLine) {
 function computeScenarios(data, input) {
   const deviceById = (id) => data.DEVICES.find((d) => d.id === id);
   const rows = [];
+  const excludedByNeeds = [];
   const deviceLines = input.lineConfigs
     .map((c, i) => ({ ...c, lineNo: i + 1 }))
     .filter((c) => c.deviceId !== "none");
 
   for (const plan of data.PLANS) {
     if (plan.mvno && !input.includeMvnos) continue;
+    if (!matchesNeeds(plan, input.needs)) {
+      excludedByNeeds.push(plan);
+      continue;
+    }
     const line = plan.perLine[input.lines];
     if (!line) continue;
     const plan24 = planCost24(plan, input.lines, input.feesPerLine);
@@ -203,9 +225,9 @@ function computeScenarios(data, input) {
   }
   for (const r of rows) r.bestForPlan = bestByPlan.get(r.plan.id) === r;
   rows.sort((a, b) => a.effective24 - b.effective24);
-  return { rows, deviceLines };
+  return { rows, deviceLines, excludedByNeeds };
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { TIER_RANK, money, money2, findPromo, lineCost, planCost24, computeScenarios };
+  module.exports = { TIER_RANK, money, money2, findPromo, matchesNeeds, lineCost, planCost24, computeScenarios };
 }

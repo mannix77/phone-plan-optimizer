@@ -261,3 +261,67 @@ Then("the offer and QCI retrieval dates are valid dates", function () {
     assert.ok(!Number.isNaN(new Date(date).getTime()), `invalid retrieval date: ${date}`);
   }
 });
+
+// ------------------------------------------------- Needs assessment
+
+Given("the user needs {string} data, {int} GB of hotspot, and no international use", function (dataUse, hotspotGB) {
+  this.input.needs = { dataUse, hotspotGB, international: false };
+});
+
+Given("the user needs {string} data, {int} GB of hotspot, and international use", function (dataUse, hotspotGB) {
+  this.input.needs = { dataUse, hotspotGB, international: true };
+});
+
+When("the scenarios are computed with needs", function () {
+  const result = engine.computeScenarios(this.data, this.input);
+  this.rows = result.rows;
+  this.excludedByNeeds = result.excludedByNeeds;
+});
+
+Then("no plan is excluded by needs", function () {
+  const result = engine.computeScenarios(this.data, this.input);
+  assert.strictEqual(result.excludedByNeeds.length, 0,
+    `excluded: ${result.excludedByNeeds.map((p) => p.id).join(", ")}`);
+});
+
+Then("the {string} plan is excluded by needs", function (key) {
+  const result = engine.computeScenarios(this.data, this.input);
+  assert.ok(
+    result.excludedByNeeds.some((p) => `${p.carrier} ${p.name}` === key),
+    `${key} was not excluded`
+  );
+  assert.ok(!this.rows.some((r) => planKey(r) === key), `${key} still has rows`);
+});
+
+Then("the {string} plan is included", function (key) {
+  rowsForPlan(this.rows, key);
+});
+
+Then("the excluded-by-needs count plus included plans equals the total plans considered", function () {
+  const result = engine.computeScenarios(this.data, this.input);
+  const includedPlans = new Set(result.rows.map((r) => r.plan.id)).size;
+  const considered = this.data.PLANS.filter((p) => !p.mvno || this.input.includeMvnos).length;
+  assert.strictEqual(result.excludedByNeeds.length + includedPlans, considered);
+});
+
+Then("the first row's plan is included", function () {
+  assert.ok(this.rows.length > 0, "no rows");
+});
+
+Then("every plan has a complete features block with an https source", function () {
+  for (const p of offers.PLANS) {
+    const f = p.features;
+    assert.ok(f, `plan ${p.id} has no features block`);
+    assert.ok(f.premiumData === "unlimited" || (typeof f.premiumData === "number" && f.premiumData >= 0),
+      `plan ${p.id} has invalid premiumData`);
+    assert.ok(typeof f.hotspotGB === "number" && f.hotspotGB >= 0, `plan ${p.id} has invalid hotspotGB`);
+    assert.ok(typeof f.international === "boolean", `plan ${p.id} has invalid international`);
+    assert.ok(typeof f.source === "string" && f.source.startsWith("https://"), `plan ${p.id} features lack an https source`);
+  }
+});
+
+Then("the device catalog includes at least {int} devices from at least {int} makers", function (minDevices, minMakers) {
+  assert.ok(offers.DEVICES.length >= minDevices, `only ${offers.DEVICES.length} devices`);
+  const makers = new Set(offers.DEVICES.map((d) => d.maker));
+  assert.ok(makers.size >= minMakers, `only ${makers.size} makers: ${[...makers].join(", ")}`);
+});
