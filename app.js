@@ -1,10 +1,13 @@
 /*
- * UI layer. All calculations live in engine.js (BDD-tested via
- * features/), all pricing in data/offers.js, and QCI priority values in
- * data/qci.js — nothing here hard-codes a dollar amount or a QCI number.
+ * UI layer: a four-step guided flow, then a classified recommendation.
+ * All calculations live in engine.js (BDD-tested via features/), all
+ * pricing in data/offers.js, and QCI values in data/qci.js — nothing
+ * here hard-codes a dollar amount or a QCI number. Results are computed
+ * only when the user finishes the questions.
  */
 
 const BIG3 = ["Verizon", "T-Mobile", "AT&T"];
+const LAST_STEP = 4;
 
 const ENGINE_DATA = {
   PLANS,
@@ -15,10 +18,64 @@ const ENGINE_DATA = {
 };
 
 const deviceById = (id) => DEVICES.find((d) => d.id === id);
-
-// ---------------------------------------------------------------- UI
-
 const $ = (id) => document.getElementById(id);
+
+// ------------------------------------------------------------- Wizard
+
+let step = 1;
+
+function showStep() {
+  for (const panel of document.querySelectorAll(".step")) {
+    panel.hidden = Number(panel.dataset.step) !== step;
+  }
+  for (const li of document.querySelectorAll("#stepper li")) {
+    li.classList.toggle("active", Number(li.dataset.step) === step);
+    li.classList.toggle("done", Number(li.dataset.step) < step);
+  }
+  $("btn-back").disabled = step === 1;
+  $("btn-next").textContent = step === LAST_STEP ? "See my recommendation" : "Next";
+}
+
+$("btn-back").addEventListener("click", () => {
+  if (step > 1) step--;
+  showStep();
+});
+
+$("btn-next").addEventListener("click", () => {
+  // Graph-driven flow: the payment-paths question only exists when a new
+  // device is in play, so it is skipped when nobody needs a phone.
+  if (step === 3 && !anyNewDevices()) {
+    showResults();
+    return;
+  }
+  if (step < LAST_STEP) {
+    step++;
+    showStep();
+  } else {
+    showResults();
+  }
+});
+
+function anyNewDevices() {
+  if ($("in-customlines").checked) {
+    return [...$("line-editor").querySelectorAll(".line-device")].some((el) => el.value !== "none");
+  }
+  return Number($("in-newdevices").value) > 0;
+}
+
+// Graph-driven prefill: the current phones' age answers the trade-in
+// question before it is asked (the user can still override it).
+$("in-phone-age").addEventListener("input", () => {
+  $("in-tradein").value = suggestTradeIn($("in-phone-age").value);
+});
+
+$("btn-edit").addEventListener("click", () => {
+  $("results").hidden = true;
+  $("wizard").hidden = false;
+  showStep();
+});
+
+// ------------------------------------------------------------- Inputs
 
 function deviceOptions(selected) {
   const opts = DEVICES.map(
@@ -55,8 +112,14 @@ function renderLineEditor() {
       <select class="line-tradein" aria-label="Line ${i + 1} trade-in">${tradeInOptions(p.tradeIn)}</select>
     </div>`;
   }).join("");
-  for (const el of wrap.querySelectorAll("select")) el.addEventListener("input", render);
 }
+
+$("in-customlines").addEventListener("input", () => {
+  const custom = $("in-customlines").checked;
+  $("uniform-inputs").hidden = custom;
+  $("line-editor").hidden = !custom;
+  if (custom) renderLineEditor();
+});
 
 function readInputs() {
   const lines = Number($("in-lines").value);
@@ -80,8 +143,6 @@ function readInputs() {
       i < newDevices ? { deviceId, tradeIn } : { deviceId: "none", tradeIn: "none" }
     );
   }
-  $("uniform-inputs").hidden = custom;
-  $("line-editor").hidden = !custom;
   const paths = new Set(
     [...document.querySelectorAll(".path-option:checked")].map((el) => el.value)
   );
@@ -98,6 +159,8 @@ function readInputs() {
     feesPerLine: Number($("in-fees").value) || 0,
   };
 }
+
+// ------------------------------------------------------------ Results
 
 function availabilityNotice(deviceLines, input) {
   const messages = [];
@@ -118,7 +181,7 @@ function availabilityNotice(deviceLines, input) {
     )];
     if (noLease.length) {
       messages.push(
-        `No lease offer in the data for <strong>${noLease.join(", ")}</strong> — lease rows are hidden for this selection.`
+        `No lease offer in the data for <strong>${noLease.join(", ")}</strong> — lease options are omitted for this selection.`
       );
     }
   }
@@ -127,111 +190,149 @@ function availabilityNotice(deviceLines, input) {
   el.innerHTML = messages.join("<br>");
 }
 
-function qciBadge(r) {
-  if (!r.plan.mvno || !r.qci) return "";
-  return `<span class="qci" title="${QCI_EXPLANATION}">*QCI ${r.qci.value}</span>`;
+function qciBadge(o) {
+  if (!o.plan.mvno || !o.qci) return "";
+  return `<span class="qci" title="${QCI_EXPLANATION}">*QCI ${o.qci.value}</span>`;
 }
 
-function rowDetail(r, input) {
-  const d = [];
-  const priceNow = r.plan.perLine[input.lines].price;
-  d.push(
-    `Plan: ${r.plan.carrier} ${r.plan.name} — ${money2(priceNow)}/line × ${input.lines} line(s)` +
-      (r.plan.intro ? ` (first ${r.plan.intro.months} months at ${money2(r.plan.intro.perLine)}/line)` : "") +
-      ` ≈ ${money2(r.planMonthly)}/mo → ${money(r.plan24)} over 24 months.`
+function featureSummary(plan) {
+  const f = plan.features || {};
+  const parts = [];
+  parts.push(
+    f.premiumData === "unlimited" ? "unlimited priority data" : f.premiumData ? `${f.premiumData}GB priority data` : "no priority data"
   );
-  if (r.plan.notes) d.push(r.plan.notes);
-  if (r.qci) {
-    d.push(`Network priority: QCI ${r.qci.value}${r.plan.mvno ? ` on the ${r.plan.network} network` : ""}. ${r.qci.note}`);
-    if (r.plan.mvno) d.push(QCI_EXPLANATION);
+  if (f.hotspotGB) parts.push(`${f.hotspotGB}GB hotspot`);
+  if (f.international) parts.push("international included");
+  return parts.join(" · ");
+}
+
+function optionDetail(o, input) {
+  const d = [];
+  const priceNow = o.plan.perLine[input.lines].price;
+  d.push(
+    `Plan: ${o.plan.carrier} ${o.plan.name} — ${money2(priceNow)}/line × ${input.lines} line(s)` +
+      (o.plan.intro ? ` (first ${o.plan.intro.months} months at ${money2(o.plan.intro.perLine)}/line)` : "") +
+      ` ≈ ${money2(o.planMonthly)}/mo → ${money(o.plan24)} over 24 months.`
+  );
+  if (o.plan.notes) d.push(o.plan.notes);
+  if (o.qci) {
+    d.push(`Network priority: QCI ${o.qci.value}${o.plan.mvno ? ` on the ${o.plan.network} network` : ""}. ${o.qci.note}`);
+    if (o.plan.mvno) d.push(QCI_EXPLANATION);
   }
-  if (r.pathKey !== "byod") {
+  if (o.pathKey !== "byod") {
     d.push(
-      r.pathKey === "outright"
-        ? `Devices: ${money(r.upfront)} paid upfront.`
-        : `Devices: ${money(r.devicePaid24)} paid by month 24.`
+      o.pathKey === "outright"
+        ? `Devices: ${money(o.upfront)} paid upfront.`
+        : `Devices: ${money(o.devicePaid24)} paid by month 24.`
     );
   }
-  if (r.creditsApplied > 0) d.push(`Credits/trade-in applied by month 24: ${money(r.creditsApplied)}.`);
-  if (r.owedAt24 > 0)
+  if (o.creditsApplied > 0) d.push(`Credits/trade-in applied by month 24: ${money(o.creditsApplied)}.`);
+  if (o.owedAt24 > 0)
     d.push(
-      `Still owed on devices at month 24: ${money(r.owedAt24)} (financing runs past the 24-month window). ` +
-        `True 24-month cost: ${money(r.total24)} paid + ${money(r.owedAt24)} payoff = ${money(r.effective24)}.`
+      `Still owed on devices at month 24: ${money(o.owedAt24)} (financing runs past the 24-month window). ` +
+        `True 24-month cost: ${money(o.total24)} paid + ${money(o.owedAt24)} payoff = ${money(o.effective24)}.`
     );
-  for (const n of r.notes) d.push(n);
-  const sources = [`<a href="${r.plan.source}" target="_blank" rel="noopener">plan pricing</a>`];
-  for (const dl of new Set(input.lineConfigs.filter((c) => c.deviceId !== "none").map((c) => c.deviceId))) {
-    const dev = deviceById(dl);
+  for (const n of o.notes) d.push(n);
+  const sources = [`<a href="${o.plan.source}" target="_blank" rel="noopener">plan pricing</a>`];
+  for (const id of new Set(input.lineConfigs.filter((c) => c.deviceId !== "none").map((c) => c.deviceId))) {
+    const dev = deviceById(id);
     sources.push(`<a href="${dev.source}" target="_blank" rel="noopener">${dev.name} pricing</a>`);
   }
   d.push(`Sources: ${sources.join(" · ")} (retrieved ${DATA_RETRIEVED}).`);
   return d.map((t) => `<p>${t}</p>`).join("");
 }
 
-function render() {
-  const input = readInputs();
-  const { rows, deviceLines, excludedByNeeds } = computeScenarios(ENGINE_DATA, input);
-  availabilityNotice(deviceLines, input);
+function chips(o) {
+  return o.diffs.map((t) => `<span class="chip">${t}</span>`).join("");
+}
 
+function vsToday(o, current) {
+  if (!current.monthly) return "";
+  const s = savingsVsCurrent(o, current.monthly);
+  const verb = s >= 0 ? "save about" : "spend about";
+  return `<div class="hero-today">vs. today's ${money2(current.monthly)}/mo service-only bill: ${verb} ${money(Math.abs(s))} over 24 months (this option's number includes device costs; today's doesn't).</div>`;
+}
+
+function currentCarrierChip(o, current) {
+  return o.plan.carrier === current.carrier ? '<span class="chip chip-muted">Your current carrier</span>' : "";
+}
+
+function heroCard(o, label, input, why, current) {
+  return `<div class="hero-card ${label === "Best option" ? "hero-best" : ""}">
+    <div class="hero-label">${label}</div>
+    <div class="hero-plan">${o.plan.carrier} ${o.plan.name}${o.estimated ? '<span class="est" title="Multi-line price estimated — verify on carrier site">*</span>' : ""}${qciBadge(o)}</div>
+    <div class="hero-path">${o.pathLabel}</div>
+    <div class="hero-total">${money(o.effective24)}<span class="hero-per"> over 24 months · ${money2(o.effective24 / 24)}/mo</span></div>
+    ${o.owedAt24 > 0 ? `<div class="hero-owed">${money(o.total24)} paid in 24 months + ${money(o.owedAt24)} device balance at month 24</div>` : ""}
+    <div class="hero-why">${why}</div>
+    ${vsToday(o, current)}
+    <div class="chips">${chips(o)}${currentCarrierChip(o, current)}</div>
+    <details><summary>See the math</summary><div class="detail">${optionDetail(o, input)}</div></details>
+  </div>`;
+}
+
+function showResults() {
+  const input = readInputs();
+  const result = computeScenarios(ENGINE_DATA, input);
+  const { rows, deviceLines, excludedByNeeds } = result;
+
+  availabilityNotice(deviceLines, input);
   const needsNote = $("needs-note");
   if (excludedByNeeds.length) {
     needsNote.hidden = false;
     needsNote.innerHTML =
-      `${excludedByNeeds.length} plan(s) don't meet your data needs and are hidden: ` +
+      `${excludedByNeeds.length} plan(s) don't meet your data needs and were set aside: ` +
       excludedByNeeds.map((p) => `${p.carrier} ${p.name}`).join(", ") + ".";
   } else {
     needsNote.hidden = true;
   }
 
-  if (rows.length === 0) {
-    $("best-pick").innerHTML = `<div class="best-main">No plan in the data meets these needs — relax a requirement to see options.</div>`;
-    $("results-body").innerHTML = "";
+  const current = {
+    monthly: Number($("in-current-monthly").value) || 0,
+    balance: Number($("in-current-balance").value) || 0,
+    carrier: $("in-current-carrier").value,
+  };
+  const { options, cheapest, best } = classifyResults(result);
+
+  if (!options.length) {
+    $("hero-cards").innerHTML = `<div class="hero-card"><div class="hero-plan">No plan in the data meets these needs</div><div class="hero-why">Relax a requirement — hotspot size and international coverage are the usual constraints.</div></div>`;
+    $("ranked-title").textContent = "";
+    $("ranked-list").innerHTML = "";
     $("estimate-note").hidden = true;
-    return;
+  } else {
+    const bestWhy = `The most plan for your needs: ${featureSummary(best.plan)}.`;
+    const cheapWhy = `The lowest true 24-month cost that still meets your needs.`;
+    $("hero-cards").innerHTML =
+      (best === cheapest
+        ? heroCard(best, "Best & cheapest option", input, `${bestWhy} And nothing qualifying costs less.`, current)
+        : heroCard(best, "Best option", input, bestWhy, current) + heroCard(cheapest, "Cheapest option", input, cheapWhy, current)) +
+      (current.balance > 0
+        ? `<div class="banner">You still owe ${money(current.balance)} on your current phones — that's due (or settled by trade-in) whichever option you pick, so it doesn't change the ranking.</div>`
+        : "");
+
+    $("ranked-title").textContent = `Every qualifying option, ranked (${options.length})`;
+    $("ranked-list").innerHTML = options
+      .map(
+        (o, i) => `<div class="option-row ${o === best || o === cheapest ? "option-top" : ""}">
+        <div class="option-rank">${i + 1}</div>
+        <div class="option-main">
+          <div class="option-plan">${o.plan.carrier} ${o.plan.name}${o.estimated ? '<span class="est" title="Multi-line price estimated — verify on carrier site">*</span>' : ""}${qciBadge(o)} <span class="option-path">· ${o.pathLabel}</span></div>
+          <div class="chips">${o.diffs.length ? chips(o) : '<span class="chip chip-muted">No standout advantage</span>'}${currentCarrierChip(o, current)}</div>
+          <details><summary>See the math</summary><div class="detail">${optionDetail(o, input)}</div></details>
+        </div>
+        <div class="option-cost">${money(o.effective24)}<div class="option-per">${money2(o.effective24 / 24)}/mo</div></div>
+      </div>`
+      )
+      .join("");
+    $("estimate-note").hidden = !options.some((o) => o.estimated);
   }
-  const best = rows[0];
 
-  const deviceSummary =
-    deviceLines.length === 0
-      ? "bring your own devices"
-      : deviceLines.length === input.lines && new Set(deviceLines.map((d) => d.deviceId)).size === 1
-        ? `${deviceLines.length} × ${deviceById(deviceLines[0].deviceId).name}`
-        : `${deviceLines.length} new device(s)`;
-
-  $("best-pick").innerHTML = `
-    <div class="best-label">Lowest true 24-month cost among plans matching your needs — ${input.lines} line(s), ${deviceSummary}</div>
-    <div class="best-main">${best.plan.carrier} ${best.plan.name} · ${best.pathLabel}</div>
-    <div class="best-total">${money(best.effective24)}<span class="best-per"> true cost · ${money(best.total24)} paid in 24 mo${best.owedAt24 > 0 ? ` + ${money(best.owedAt24)} device payoff` : ""} · ${money2(best.total24 / 24)}/mo average</span></div>
-    ${deviceLines.length ? `<div class="best-path-note">${best.pathKey === "byod" ? "" : `Best way to get the device${input.lines > 1 ? "s" : ""} here: <strong>${best.pathLabel.toLowerCase()}</strong>. Each plan's best path is tagged in the table.`}</div>` : ""}
-  `;
-
-  $("estimate-note").hidden = !rows.some((r) => r.estimated);
-
-  $("results-body").innerHTML = rows
-    .map(
-      (r, i) => `
-    <tr class="${i === 0 ? "top-row" : ""}">
-      <td>
-        <span class="carrier">${r.plan.carrier}</span>
-        ${r.plan.name}${r.estimated ? '<span class="est" title="Multi-line price estimated — verify on carrier site">*</span>' : ""}
-        ${qciBadge(r)}
-      </td>
-      <td>${r.pathLabel}${r.anyPromo ? ' <span class="pill">promo</span>' : ""}${r.bestForPlan && deviceLines.length ? ' <span class="pill best-pill">best path</span>' : ""}</td>
-      <td class="num">${money(r.plan24)}</td>
-      <td class="num">${money(r.devicePaid24)}</td>
-      <td class="num">${r.upfront ? money(r.upfront) : "—"}</td>
-      <td class="num">${r.owedAt24 ? money(r.owedAt24) : "—"}</td>
-      <td class="num">${money(r.total24)}</td>
-      <td class="num total">${money(r.effective24)}</td>
-      <td class="detail-cell">
-        <details><summary>math</summary><div class="detail">${rowDetail(r, input)}</div></details>
-      </td>
-    </tr>`
-    )
-    .join("");
-
-  $("qci-legend").hidden = !input.includeMvnos;
+  $("wizard").hidden = true;
+  $("results").hidden = false;
+  window.scrollTo({ top: 0 });
 }
+
+// -------------------------------------------------------------- Setup
 
 // Stale-data warning: offer data is meant to be refreshed monthly.
 (function staleCheck() {
@@ -258,7 +359,4 @@ $("in-device").innerHTML = DEVICES.map(
 ).join("");
 $("qci-legend").textContent = `* ${QCI_EXPLANATION}`;
 $("data-date").textContent = DATA_RETRIEVED;
-for (const el of document.querySelectorAll("#inputs input, #inputs select")) {
-  el.addEventListener("input", render);
-}
-render();
+showStep();

@@ -140,6 +140,7 @@ const PLANS = [
     features: {
       premiumData: "unlimited",
       hotspotGB: 60,
+      priceGuaranteeYears: 5,
       international: false,
       estimatedFeatures: ["premiumData", "international"],
       source: "https://www.rvmobileinternet.com/t-mobile-announces-new-experience-plans-including-up-to-250-gb-of-mobile-hotspot-data-but-taxes-and-fees-are-now-extra/",
@@ -164,6 +165,7 @@ const PLANS = [
     features: {
       premiumData: "unlimited",
       hotspotGB: 250,
+      priceGuaranteeYears: 5,
       international: true,
       source: "https://wellkeptwallet.com/t-mobile-experience-beyond-plan/",
       note: "No deprioritization; 250GB high-speed hotspot; travel benefits; Starlink backup.",
@@ -318,6 +320,7 @@ const PLANS = [
     features: {
       premiumData: 0,
       hotspotGB: 0,
+      priceGuaranteeYears: 5,
       international: false,
       estimatedFeatures: ["hotspotGB"],
       source: "https://www.usmobile.com/blog/best-prepaid-phone-plans/",
