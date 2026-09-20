@@ -362,3 +362,8 @@ const CARRIER_PROMOS = [
 // full retail divided evenly. [ASSUMED — confirm: standard across all
 // three carriers for these devices.]
 const CARRIER_FINANCE_MONTHS = 36;
+
+// Node export for the BDD suite (features/); ignored in the browser.
+if (typeof module !== "undefined") {
+  module.exports = { DATA_RETRIEVED, PLANS, DEVICES, CARRIER_PROMOS, CARRIER_FINANCE_MONTHS };
+}

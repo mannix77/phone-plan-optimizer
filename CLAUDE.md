@@ -1,5 +1,20 @@
 # phone-plan-optimizer
 
+## BDD / TDD policy (required)
+
+Development is test-first. For any change to calculations or behavior:
+
+1. Write (or update) the Gherkin scenario in `features/*.feature` and its
+   step definitions in `features/steps/` first.
+2. Run `npm test` and watch the new scenario fail (red).
+3. Build the smallest change that makes it pass (green), then refactor.
+
+All calculation logic lives in `engine.js` — pure functions that take the
+offer data as an argument, testable in Node and used unchanged by the
+browser. `app.js` is UI only and must not contain calculations. The
+`tests` workflow runs the suite on every PR; a PR with failing or missing
+scenarios for changed behavior is not mergeable.
+
 ## AI attribution policy (required)
 
 Commit trailers are added automatically by `.githooks/prepare-commit-msg`

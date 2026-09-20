@@ -1,0 +1,12 @@
+{
+  "name": "phone-plan-optimizer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Compare 24-month total cost of ownership for cell phone plan + device combinations",
+  "scripts": {
+    "test": "cucumber-js"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^11.2.0"
+  }
+}
