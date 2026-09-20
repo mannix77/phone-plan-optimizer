@@ -1,0 +1,40 @@
+name: Weekly plan-definitions check
+
+# The needs assessment matches on the carriers' plan definitions
+# (priority data, hotspot, international) stored in data/offers.js
+# `features` blocks. Plan types change infrequently but do change, so
+# this opens a checklist issue every Monday. Updating the plan types =
+# editing those features blocks (and prices) and merging a PR — the BDD
+# suite's data-integrity scenarios validate the edit.
+
+on:
+  schedule:
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Weekly plan-definitions check — ${new Date().toISOString().slice(0, 10)}`,
+              body: [
+                "Verify the carriers' plan definitions against their sites and update `data/offers.js` if anything changed:",
+                "",
+                "- [ ] Verizon myPlan lineup (Welcome / Plus / Ultimate): per-line prices, priority data, hotspot GB, international",
+                "- [ ] T-Mobile lineup (Essentials / Experience More / Experience Beyond): same fields",
+                "- [ ] AT&T lineup (Value / Extra / Premium 2.0 — and whether Elite 2.0 should be added): same fields",
+                "- [ ] MVNOs (Visible, Mint, Metro, Cricket): prices and any feature changes",
+                "- [ ] Resolve any `estimatedFeatures` entries against carrier sites",
+                "- [ ] If a carrier renamed or replaced a plan type, update the plan entry, its `features` block, and its QCI entry in `data/qci.js` in the same change",
+                "- [ ] Update `DATA_RETRIEVED` and run `npm test` (the data-integrity scenarios validate the edit)",
+              ].join("\n"),
+            });

@@ -47,3 +47,8 @@ const QCI_BY_PLAN = {
   "att-premium": { value: 8, note: "Unlimited premium data at AT&T postpaid priority." },
   "cricket": { value: 9, note: "Most Cricket lines are deprioritized on AT&T (the Unlimited + 15GB hotspot tier rides at QCI 8)." },
 };
+
+// Node export for the BDD suite (features/); ignored in the browser.
+if (typeof module !== "undefined") {
+  module.exports = { QCI_RETRIEVED, QCI_EXPLANATION, QCI_BY_PLAN };
+}
