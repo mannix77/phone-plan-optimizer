@@ -203,7 +203,7 @@ summary:focus-visible {
   border: 1px solid var(--line);
   border-radius: 10px;
 }
-table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 760px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 860px; }
 th {
   text-align: left;
   font-size: 0.72rem;
@@ -241,6 +241,8 @@ td.total { font-weight: 700; }
   vertical-align: middle;
 }
 .est { color: var(--warn); font-weight: 700; margin-left: 2px; cursor: help; }
+.best-pill { background: var(--best-bg); color: var(--accent); border: 1px solid var(--accent); }
+.best-path-note { margin-top: 6px; font-size: 0.88rem; color: var(--muted); }
 
 details summary {
   cursor: pointer;
