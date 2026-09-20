@@ -161,18 +161,103 @@ const PLANS = [
     notes: "Unlimited premium data. Top tier — required for AT&T's biggest device promos.",
     source: "https://shopcellplans.com/att-plans/",
   },
+
+  // ------------------------------------------------------------- MVNOs
+  // MVNO device catalogs are not in the data yet, so the app prices MVNO
+  // rows with manufacturer purchase paths only. [ASSUMED — confirm:
+  // whether to add each MVNO's own device store/financing offers.]
+  // Multi-line prices marked estimated are flat single-line rates —
+  // some MVNOs offer multi-line discounts not captured here.
+  {
+    id: "visible",
+    carrier: "Visible",
+    name: "Visible Unlimited",
+    tier: "base",
+    mvno: true,
+    network: "Verizon",
+    perLine: {
+      1: { price: 25 },
+      2: { price: 25 },
+      3: { price: 25 },
+      4: { price: 25 },
+      5: { price: 25 },
+    },
+    taxesIncluded: true,
+    notes: "Prepaid, taxes and fees included, no multi-line discount needed — every line is $25.",
+    source: "https://www.usmobile.com/blog/best-prepaid-phone-plans/",
+  },
+  {
+    id: "mint",
+    carrier: "Mint Mobile",
+    name: "Mint Unlimited",
+    tier: "base",
+    mvno: true,
+    network: "T-Mobile",
+    intro: { months: 12, perLine: 15 },
+    perLine: {
+      1: { price: 30 },
+      2: { price: 30, estimated: true },
+      3: { price: 30, estimated: true },
+      4: { price: 30, estimated: true },
+      5: { price: 30, estimated: true },
+    },
+    taxesIncluded: false,
+    notes: "Prepaid annually. $15/mo for the first 12 months with 12-month prepayment, then renews at $30/mo.",
+    source: "https://www.usmobile.com/blog/best-prepaid-phone-plans/",
+  },
+  {
+    id: "metro",
+    carrier: "Metro",
+    name: "Metro Unlimited",
+    tier: "base",
+    mvno: true,
+    network: "T-Mobile",
+    perLine: {
+      1: { price: 50 },
+      2: { price: 50, estimated: true },
+      3: { price: 50, estimated: true },
+      4: { price: 50, estimated: true },
+      5: { price: 50, estimated: true },
+    },
+    taxesIncluded: false,
+    notes: "T-Mobile's prepaid brand. A $40 lower tier exists; multi-line discounts not yet captured.",
+    source: "https://www.usmobile.com/blog/best-prepaid-phone-plans/",
+  },
+  {
+    id: "cricket",
+    carrier: "Cricket",
+    name: "Cricket Unlimited",
+    tier: "base",
+    mvno: true,
+    network: "AT&T",
+    perLine: {
+      1: { price: 55 },
+      2: { price: 55, estimated: true },
+      3: { price: 55, estimated: true },
+      4: { price: 55, estimated: true },
+      5: { price: 55, estimated: true },
+    },
+    taxesIncluded: false,
+    notes: "AT&T's prepaid brand. $55/mo with autopay ($60 without); multi-line discounts not yet captured.",
+    source: "https://www.usmobile.com/blog/best-prepaid-phone-plans/",
+  },
 ];
 
 // Devices with manufacturer-direct purchase and financing options.
 // mfrFinancing is 0% APR where noted by the source.
 // mfrTradeIn: credit by trade-in tier (older ≈ 3-year-old flagship,
 // recent ≈ last year's flagship), from the manufacturer's own program.
+// soldBy: carriers whose own store sells this device (carrier financing
+// is only possible there). A device missing from a carrier's list is
+// flagged in the UI and costed as a manufacturer purchase on that
+// carrier. Update this list as carrier catalogs change.
 const DEVICES = [
   {
     id: "iphone17-256",
     maker: "Apple",
     name: "iPhone 17 (256GB)",
     retail: 799,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
     mfrFinancing: { months: 24, monthly: 33.29, apr: 0 },
     mfrTradeIn: { older: 200, recent: 450 },
     source: "https://macmyths.com/apple-iphone-17-pricing-u-s-cost-storage-financing-trade-in-and-carrier-deals/",
@@ -182,6 +267,7 @@ const DEVICES = [
     maker: "Apple",
     name: "iPhone 17 (512GB)",
     retail: 999,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
     mfrFinancing: { months: 24, monthly: 41.63, apr: 0 },
     mfrTradeIn: { older: 200, recent: 450 },
     source: "https://macmyths.com/apple-iphone-17-pricing-u-s-cost-storage-financing-trade-in-and-carrier-deals/",
@@ -191,6 +277,7 @@ const DEVICES = [
     maker: "Samsung",
     name: "Galaxy S26 (256GB)",
     retail: 899.99,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
     mfrFinancing: { months: 24, monthly: 37.5, apr: 0 },
     mfrTradeIn: { older: 400, recent: 720 },
     source: "https://www.androidcentral.com/phones/samsung-galaxy/best-samsung-galaxy-s26-deals",
@@ -200,6 +287,7 @@ const DEVICES = [
     maker: "Samsung",
     name: "Galaxy S26+ (256GB)",
     retail: 1099.99,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
     mfrFinancing: { months: 24, monthly: 45.83, apr: 0 },
     mfrTradeIn: { older: 400, recent: 720 },
     source: "https://www.androidcentral.com/phones/samsung-galaxy/best-samsung-galaxy-s26-deals",
@@ -209,6 +297,7 @@ const DEVICES = [
     maker: "Samsung",
     name: "Galaxy S26 Ultra (256GB)",
     retail: 1299.99,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
     mfrFinancing: { months: 24, monthly: 54.17, apr: 0 },
     mfrTradeIn: { older: 400, recent: 720 },
     source: "https://www.androidcentral.com/phones/samsung-galaxy/best-samsung-galaxy-s26-deals",

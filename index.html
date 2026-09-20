@@ -14,43 +14,49 @@
 
   <div class="banner">
     Offer data was collected from public sources on <strong id="data-date"></strong>
-    and covers a sample of major US postpaid offers — it is not exhaustive, and
+    and covers a sample of major US offers — it is not exhaustive, and
     carrier pricing changes often. Verify any result on the carrier's site before buying.
   </div>
+  <div class="banner" id="stale-note" hidden></div>
 
   <form id="inputs" onsubmit="return false">
-    <label>Lines
-      <select id="in-lines">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4" selected>4</option>
-        <option value="5">5</option>
-      </select>
-    </label>
-    <label>New device
-      <select id="in-device">
-        <option value="iphone17-256" selected>iPhone 17 (256GB)</option>
-        <option value="iphone17-512">iPhone 17 (512GB)</option>
-        <option value="s26">Galaxy S26 (256GB)</option>
-        <option value="s26plus">Galaxy S26+ (256GB)</option>
-        <option value="s26ultra">Galaxy S26 Ultra (256GB)</option>
-      </select>
-    </label>
-    <label>How many need the new device
-      <input id="in-newdevices" type="number" min="0" max="5" value="2">
-    </label>
-    <label>Trade-in per new device
-      <select id="in-tradein">
-        <option value="none">No trade-in</option>
-        <option value="older" selected>Older flagship (~3 yrs)</option>
-        <option value="recent">Recent flagship (last year)</option>
-      </select>
-    </label>
-    <label>Est. taxes &amp; fees ($/line/mo)
-      <input id="in-fees" type="number" min="0" step="0.5" value="0">
-    </label>
+    <div class="controls-grid">
+      <label>Lines
+        <select id="in-lines">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+        </select>
+      </label>
+      <label>Est. taxes &amp; fees ($/line/mo)
+        <input id="in-fees" type="number" min="0" step="0.5" value="0">
+      </label>
+      <label class="check"><input id="in-mvnos" type="checkbox"> Include MVNOs / prepaid</label>
+      <label class="check"><input id="in-customlines" type="checkbox"> Customize each line</label>
+    </div>
+
+    <div class="controls-grid" id="uniform-inputs">
+      <label>New device
+        <select id="in-device"></select>
+      </label>
+      <label>How many need the new device
+        <input id="in-newdevices" type="number" min="0" max="5" value="2">
+      </label>
+      <label>Trade-in per new device
+        <select id="in-tradein">
+          <option value="none">No trade-in</option>
+          <option value="older" selected>Older flagship (~3 yrs)</option>
+          <option value="recent">Recent flagship (last year)</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="line-editor" hidden></div>
   </form>
+
+  <div class="banner" id="availability-note" hidden></div>
 
   <div id="best-pick"></div>
 
@@ -78,12 +84,13 @@
   </div>
 
   <footer>
+    <p id="qci-legend" hidden></p>
     <p>
       Totals are what you pay in months 1–24. Carrier financing usually runs 36
       months, so "Owed at mo 24" is the device balance that remains — leaving a
       carrier before the term ends makes it due and forfeits remaining promo
-      credits. Plan prices assume autopay; taxes and fees are extra on all
-      plans shown unless you add an estimate above. Manufacturer trade-in
+      credits. Plan prices assume autopay; taxes and fees are extra unless the
+      plan says otherwise or you add an estimate above. Manufacturer trade-in
       values use the maker's published ranges and depend on your device's
       condition.
     </p>
@@ -91,4 +98,5 @@
 </div>
 
 <script src="data/offers.js"></script>
+<script src="data/qci.js"></script>
 <script src="app.js"></script>

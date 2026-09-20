@@ -1,0 +1,34 @@
+name: Monthly data refresh reminder
+
+# Offer pricing and QCI values are stored locally in data/offers.js and
+# data/qci.js with a retrieval date. Policy: refresh monthly. This
+# workflow opens an issue on the 1st of each month as the reminder.
+
+on:
+  schedule:
+    - cron: "0 14 1 * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Monthly offer & QCI data refresh — ${new Date().toISOString().slice(0, 7)}`,
+              body: [
+                "Time for the monthly data refresh:",
+                "",
+                "- [ ] Verify plan prices in `data/offers.js` (per-line prices, promos, device retail/financing) and update `DATA_RETRIEVED`",
+                "- [ ] Verify QCI assignments in `data/qci.js` and update `QCI_RETRIEVED`",
+                "- [ ] Resolve any `estimated: true` prices against carrier sites",
+                "- [ ] If a new carrier was added since last month, confirm it has a QCI entry",
+              ].join("\n"),
+            });
