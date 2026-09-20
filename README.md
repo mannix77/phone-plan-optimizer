@@ -27,6 +27,12 @@ Options:
   per-row math explain this.
 - **Per-line customization** — toggle "Customize each line" to give every
   line its own device and trade-in instead of one model for all.
+- **Device options** — pick which acquisition paths to compare: finance
+  through the carrier, finance through the manufacturer, buy outright,
+  lease/upgrade program, or bring your own (plan-only baseline). Lease
+  rows appear only for devices with a lease offer in the data (currently
+  Apple's iPhone Upgrade Program); the app says so when a selected device
+  has none rather than estimating one.
 - **Device availability** — each device lists which carriers sell it
   (`soldBy`). If a selected device isn't sold by a carrier, the app says
   so and prices that carrier's row as a manufacturer purchase instead.

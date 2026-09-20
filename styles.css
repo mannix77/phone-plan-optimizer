@@ -96,6 +96,23 @@ h1 {
 }
 #inputs label.check input { accent-color: var(--accent); width: 16px; height: 16px; }
 #line-editor { display: flex; flex-direction: column; gap: 8px; }
+.path-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px 12px;
+  margin: 0;
+}
+.path-picker legend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding-inline: 4px;
+}
 .line-row {
   display: grid;
   grid-template-columns: 64px 1fr 1fr;

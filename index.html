@@ -54,6 +54,15 @@
     </div>
 
     <div id="line-editor" hidden></div>
+
+    <fieldset class="path-picker">
+      <legend>Device options to compare</legend>
+      <label class="check"><input class="path-option" type="checkbox" value="carrier" checked> Finance through carrier</label>
+      <label class="check"><input class="path-option" type="checkbox" value="mfr" checked> Finance through manufacturer</label>
+      <label class="check"><input class="path-option" type="checkbox" value="outright" checked> Buy outright</label>
+      <label class="check"><input class="path-option" type="checkbox" value="lease" checked> Lease / upgrade program</label>
+      <label class="check"><input class="path-option" type="checkbox" value="byod"> Bring your own (plan only)</label>
+    </fieldset>
   </form>
 
   <div class="banner" id="availability-note" hidden></div>
@@ -75,7 +84,8 @@
           <th class="num">Devices, 24 mo</th>
           <th class="num">Due upfront</th>
           <th class="num">Owed at mo 24</th>
-          <th class="num">Total, 24 mo</th>
+          <th class="num">Paid, 24 mo</th>
+          <th class="num">True cost, 24 mo</th>
           <th></th>
         </tr>
       </thead>

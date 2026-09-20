@@ -55,6 +55,18 @@ function lineCost(pathKey, plan, device, tradeIn, lineNo) {
   if (pathKey === "mfr") {
     return { upfront: 0, paid24: financed, owedAt24: 0, creditsApplied: mfrTrade, notes: mfrNotes };
   }
+  if (pathKey === "lease") {
+    const l = device.lease;
+    const notes = [`Line ${lineNo}: ${l.program} at ${money2(l.monthly)}/mo — ${l.note}`];
+    if (tradeIn !== "none") notes.push(`Line ${lineNo}: trade-in is not modeled for the lease/upgrade program.`);
+    return {
+      upfront: 0,
+      paid24: l.monthly * Math.min(24, l.months),
+      owedAt24: l.months > 24 ? (l.months - 24) * l.monthly : 0,
+      creditsApplied: 0,
+      notes,
+    };
+  }
 
   // Carrier financing. Falls back to manufacturer financing when the
   // carrier doesn't sell this device.
@@ -122,8 +134,19 @@ function computeScenarios(input) {
     const plan24 = planCost24(plan, input.lines, input.feesPerLine);
     const planMonthly = plan24 / 24;
 
-    const pathKeys =
-      deviceLines.length === 0 ? ["byod"] : plan.mvno ? ["mfr", "outright"] : ["carrier", "mfr", "outright"];
+    const leaseAvailable =
+      deviceLines.length > 0 && deviceLines.every((dl) => deviceById(dl.deviceId).lease);
+    let pathKeys;
+    if (deviceLines.length === 0) {
+      pathKeys = ["byod"];
+    } else {
+      const offered = plan.mvno ? ["mfr", "outright", "lease"] : ["carrier", "mfr", "outright", "lease"];
+      pathKeys = offered.filter(
+        (k) => input.paths.has(k) && (k !== "lease" || leaseAvailable)
+      );
+      if (input.paths.has("byod")) pathKeys.push("byod");
+      if (pathKeys.length === 0) pathKeys = ["byod"];
+    }
 
     for (const pathKey of pathKeys) {
       let upfront = 0, paid24 = 0, owedAt24 = 0, creditsApplied = 0;
@@ -146,10 +169,11 @@ function computeScenarios(input) {
         }
       }
       const labels = {
-        byod: "Bring your own devices",
+        byod: deviceLines.length ? "Bring your own (plan only, no new device)" : "Bring your own devices",
         carrier: anyPromo ? "Carrier financing + promo" : "Carrier financing",
         mfr: "Manufacturer 0% financing (24 mo)",
         outright: "Buy outright",
+        lease: "Lease / upgrade program",
       };
       rows.push({
         plan,
@@ -163,13 +187,25 @@ function computeScenarios(input) {
         owedAt24,
         creditsApplied,
         total24: plan24 + paid24,
+        // What 24 months truly costs: everything paid plus the device
+        // balance still owed. Ranking on this keeps 36-month carrier
+        // financing from looking artificially cheap.
+        effective24: plan24 + paid24 + owedAt24,
         estimated: !!line.estimated,
         notes,
         qci: typeof QCI_BY_PLAN !== "undefined" ? QCI_BY_PLAN[plan.id] : undefined,
       });
     }
   }
-  rows.sort((a, b) => a.total24 - b.total24);
+  // Determine the best device path per plan (BYOD baseline excluded).
+  const bestByPlan = new Map();
+  for (const r of rows) {
+    if (r.pathKey === "byod") continue;
+    const cur = bestByPlan.get(r.plan.id);
+    if (!cur || r.effective24 < cur.effective24) bestByPlan.set(r.plan.id, r);
+  }
+  for (const r of rows) r.bestForPlan = bestByPlan.get(r.plan.id) === r;
+  rows.sort((a, b) => a.effective24 - b.effective24);
   return { rows, deviceLines };
 }
 
@@ -239,33 +275,44 @@ function readInputs() {
   }
   $("uniform-inputs").hidden = custom;
   $("line-editor").hidden = !custom;
+  const paths = new Set(
+    [...document.querySelectorAll(".path-option:checked")].map((el) => el.value)
+  );
   return {
     lines,
     lineConfigs,
+    paths,
     includeMvnos: $("in-mvnos").checked,
     feesPerLine: Number($("in-fees").value) || 0,
   };
 }
 
-function availabilityNotice(deviceLines) {
+function availabilityNotice(deviceLines, input) {
+  const messages = [];
   const missing = new Map();
   for (const dl of deviceLines) {
     const d = deviceById(dl.deviceId);
     const not = BIG3.filter((c) => !d.soldBy.includes(c));
     if (not.length) missing.set(d.name, not);
   }
-  const el = $("availability-note");
-  if (!missing.size) {
-    el.hidden = true;
-    return;
+  for (const [name, carriers] of missing) {
+    messages.push(
+      `<strong>${name}</strong> is not sold by ${carriers.join(" or ")} — on those carriers it's priced as a manufacturer purchase (BYOD).`
+    );
   }
-  el.hidden = false;
-  el.innerHTML = [...missing.entries()]
-    .map(
-      ([name, carriers]) =>
-        `<strong>${name}</strong> is not sold by ${carriers.join(" or ")} — on those carriers it's priced as a manufacturer purchase (BYOD).`
-    )
-    .join("<br>");
+  if (input.paths.has("lease")) {
+    const noLease = [...new Set(
+      deviceLines.map((dl) => deviceById(dl.deviceId)).filter((d) => !d.lease).map((d) => d.name)
+    )];
+    if (noLease.length) {
+      messages.push(
+        `No lease offer in the data for <strong>${noLease.join(", ")}</strong> — lease rows are hidden for this selection.`
+      );
+    }
+  }
+  const el = $("availability-note");
+  el.hidden = messages.length === 0;
+  el.innerHTML = messages.join("<br>");
 }
 
 function qciBadge(r) {
@@ -295,7 +342,10 @@ function rowDetail(r, input) {
   }
   if (r.creditsApplied > 0) d.push(`Credits/trade-in applied by month 24: ${money(r.creditsApplied)}.`);
   if (r.owedAt24 > 0)
-    d.push(`Still owed on devices at month 24: ${money(r.owedAt24)} (carrier financing runs past the 24-month window).`);
+    d.push(
+      `Still owed on devices at month 24: ${money(r.owedAt24)} (financing runs past the 24-month window). ` +
+        `True 24-month cost: ${money(r.total24)} paid + ${money(r.owedAt24)} payoff = ${money(r.effective24)}.`
+    );
   for (const n of r.notes) d.push(n);
   const sources = [`<a href="${r.plan.source}" target="_blank" rel="noopener">plan pricing</a>`];
   for (const dl of new Set(input.lineConfigs.filter((c) => c.deviceId !== "none").map((c) => c.deviceId))) {
@@ -309,7 +359,7 @@ function rowDetail(r, input) {
 function render() {
   const input = readInputs();
   const { rows, deviceLines } = computeScenarios(input);
-  availabilityNotice(deviceLines);
+  availabilityNotice(deviceLines, input);
   const best = rows[0];
 
   const deviceSummary =
@@ -320,9 +370,10 @@ function render() {
         : `${deviceLines.length} new device(s)`;
 
   $("best-pick").innerHTML = `
-    <div class="best-label">Lowest 24-month cost for ${input.lines} line(s), ${deviceSummary}</div>
+    <div class="best-label">Lowest true 24-month cost for ${input.lines} line(s), ${deviceSummary}</div>
     <div class="best-main">${best.plan.carrier} ${best.plan.name} · ${best.pathLabel}</div>
-    <div class="best-total">${money(best.total24)}<span class="best-per"> total · ${money2(best.total24 / 24)}/mo average${best.owedAt24 > 0 ? ` · ${money(best.owedAt24)} still owed at month 24` : ""}</span></div>
+    <div class="best-total">${money(best.effective24)}<span class="best-per"> true cost · ${money(best.total24)} paid in 24 mo${best.owedAt24 > 0 ? ` + ${money(best.owedAt24)} device payoff` : ""} · ${money2(best.total24 / 24)}/mo average</span></div>
+    ${deviceLines.length ? `<div class="best-path-note">${best.pathKey === "byod" ? "" : `Best way to get the device${input.lines > 1 ? "s" : ""} here: <strong>${best.pathLabel.toLowerCase()}</strong>. Each plan's best path is tagged in the table.`}</div>` : ""}
   `;
 
   $("estimate-note").hidden = !rows.some((r) => r.estimated);
@@ -336,12 +387,13 @@ function render() {
         ${r.plan.name}${r.estimated ? '<span class="est" title="Multi-line price estimated — verify on carrier site">*</span>' : ""}
         ${qciBadge(r)}
       </td>
-      <td>${r.pathLabel}${r.anyPromo ? ' <span class="pill">promo</span>' : ""}</td>
+      <td>${r.pathLabel}${r.anyPromo ? ' <span class="pill">promo</span>' : ""}${r.bestForPlan && deviceLines.length ? ' <span class="pill best-pill">best path</span>' : ""}</td>
       <td class="num">${money(r.plan24)}</td>
       <td class="num">${money(r.devicePaid24)}</td>
       <td class="num">${r.upfront ? money(r.upfront) : "—"}</td>
       <td class="num">${r.owedAt24 ? money(r.owedAt24) : "—"}</td>
-      <td class="num total">${money(r.total24)}</td>
+      <td class="num">${money(r.total24)}</td>
+      <td class="num total">${money(r.effective24)}</td>
       <td class="detail-cell">
         <details><summary>math</summary><div class="detail">${rowDetail(r, input)}</div></details>
       </td>

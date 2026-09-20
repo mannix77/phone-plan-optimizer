@@ -1,0 +1,37 @@
+name: ai-attribution-audit
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: Post-merge attribution audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check pushed commits
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -n "$BEFORE" ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            bash scripts/ai-attribution/check-commits.sh "$BEFORE" HEAD
+          else
+            bash scripts/ai-attribution/check-commits.sh "HEAD~1" HEAD
+          fi
+
+      - name: Open issue on violation
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "AI attribution missing on main (${GITHUB_SHA:0:7})" \
+            --body "Commits reached \`main\` without the required AI attribution trailers (AI-Model / AI-Session / AI-Transcript, or AI-Assisted: none). See the failed audit run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

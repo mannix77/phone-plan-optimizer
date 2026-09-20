@@ -260,6 +260,14 @@ const DEVICES = [
     soldBy: ["Verizon", "T-Mobile", "AT&T"],
     mfrFinancing: { months: 24, monthly: 33.29, apr: 0 },
     mfrTradeIn: { older: 200, recent: 450 },
+    // Lease-style offer. Devices without a `lease` entry have no lease
+    // offer in the data — the UI says so instead of estimating one.
+    lease: {
+      program: "iPhone Upgrade Program",
+      monthly: 42.41,
+      months: 24,
+      note: "Includes AppleCare+; upgrade option after 12 payments; you own the phone after all 24 payments.",
+    },
     source: "https://macmyths.com/apple-iphone-17-pricing-u-s-cost-storage-financing-trade-in-and-carrier-deals/",
   },
   {
