@@ -1,0 +1,70 @@
+name: ai-attribution
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: AI attribution check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit trailers
+        run: |
+          bash scripts/ai-attribution/check-commits.sh "origin/${{ github.base_ref }}" HEAD
+
+      - name: Validate PR description
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+        run: |
+          # Bot-authored PRs (Renovate, Dependabot, CodeRabbit finishing-touches)
+          # get the same exemption their commits already get in check-commits.sh.
+          # None of them can be told to emit AI-* trailers: the dependency bots
+          # build their own PR body from the changelog and ignore
+          # PULL_REQUEST_TEMPLATE.md, and Dependabot's commit-message config only
+          # supports a prefix. The bot identity in the author field is the
+          # attribution. Matching on user.type/the '[bot]' login suffix rather
+          # than on a named bot means renovate[bot] was already covered when it
+          # replaced dependabot[bot] as the upgrade driver. user.type comes from
+          # GitHub, not from PR content, so a human contributor cannot forge it.
+          #
+          # Guarded at step level, not job level: a job skipped by `if:` may not
+          # report a conclusion, and this is a required status check.
+          if [ "$PR_AUTHOR_TYPE" = "Bot" ] || [[ "$PR_AUTHOR" == *'[bot]' ]]; then
+            echo "Bot-authored PR ($PR_AUTHOR) — exempt, consistent with commit policy."
+            exit 0
+          fi
+          # Parse only the trailer block, via the same script check-commits.sh
+          # uses, so a PR body and the squash commit built from it are read
+          # identically. Grepping the whole body means any prose that quotes
+          # the trailer format is read as a trailer — this PR's own body would
+          # otherwise have to avoid ever starting a line with "AI-".
+          BLOCK=$(bash scripts/ai-attribution/trailer-block.sh <<<"$PR_BODY")
+          if grep -qE '^AI-Assisted:[[:space:]]*none[[:space:]]*$' <<<"$BLOCK"; then
+            echo "PR declares: no AI assistance."
+            exit 0
+          fi
+          ok=1
+          grep -qE '^AI-Model:[[:space:]]*[^<[:space:]]' <<<"$BLOCK"      || ok=0
+          grep -qE '^AI-Session:[[:space:]]*[^<[:space:]]' <<<"$BLOCK"    || ok=0
+          grep -qE '^AI-Transcript:[[:space:]]*[^<[:space:]]' <<<"$BLOCK" || ok=0
+          # Non-blank but meaningless — passes the presence checks above.
+          # `if`, not `&&`: GitHub runs this with `bash -e`, where a bare
+          # AND-list whose grep finds nothing would abort the step.
+          if grep -qiE '^AI-Model:[[:space:]]*(unknown|none|n/a|tbd)[[:space:]]*$' <<<"$BLOCK"; then
+            ok=0
+          fi
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::PR description must include AI-Model / AI-Session / AI-Transcript lines with real values, or a single 'AI-Assisted: none' line. See docs/AI_ATTRIBUTION.md."
+            exit 1
+          fi
+          echo "PR description carries AI attribution."

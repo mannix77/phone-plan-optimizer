@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# AI-attribution policy: every commit must declare its AI provenance.
+# Inside a Claude Code session (detected via CLAUDECODE/CLAUDE_CODE_SESSION_ID,
+# which Claude Code exports to every Bash command) this appends AI-* trailers;
+# outside one it appends "AI-Assisted: none". See docs/AI_ATTRIBUTION.md.
+set -euo pipefail
+
+MSG_FILE=$1
+SOURCE=${2:-}
+
+# Merge commits are exempt; the content commits carry the trailers.
+[ "$SOURCE" = "merge" ] && exit 0
+
+has_trailer() { grep -qE "^$1:" "$MSG_FILE"; }
+
+# Already attributed (amend, reword, cherry-pick) — leave untouched.
+if has_trailer "AI-Model" || has_trailer "AI-Assisted"; then
+  exit 0
+fi
+
+if [ -n "${CLAUDECODE:-}" ] && [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
+  SID=$CLAUDE_CODE_SESSION_ID
+  AI_MODEL=unknown
+  TRANSCRIPT_PATH=""
+  # Written by the SessionStart hook (.claude/hooks/session_start.py); the
+  # model id is only exposed there, not in the Bash environment.
+  STATE="$HOME/.claude/ai-attribution/$SID.env"
+  # shellcheck disable=SC1090
+  [ -f "$STATE" ] && . "$STATE"
+
+  # SessionStart only fires for projects that register the hook, so a session
+  # started outside such a project leaves no state file. Stamping "unknown"
+  # there would satisfy the CI regex while declaring nothing — a commit that
+  # merges green with no real provenance. Fail loudly instead.
+  if [ -z "$AI_MODEL" ] || [ "$AI_MODEL" = "unknown" ]; then
+    AI_MODEL=$(git config --get ai.model || true)
+  fi
+  if [ -z "$AI_MODEL" ] || [ "$AI_MODEL" = "unknown" ]; then
+    cat >&2 <<EOF
+AI attribution: no model id recorded for session $SID.
+
+The SessionStart hook did not run for this session — it is registered per
+project, and this session was started outside a project that registers it.
+Fix it once, then retry the commit:
+
+  bash scripts/ai-attribution/setup.sh --global-hooks
+
+Or declare the model explicitly for this clone:
+
+  git config ai.model <model-id>
+
+See docs/AI_ATTRIBUTION.md.
+EOF
+    exit 1
+  fi
+
+  BASE_URL=$(git config --get ai.transcriptBaseUrl || true)
+  if [ -n "$BASE_URL" ]; then
+    TRANSCRIPT_REF="${BASE_URL%/}/$SID.jsonl"
+  else
+    ARCHIVE_DIR=$(git config --get ai.transcriptArchiveDir || echo "$HOME/claude-transcript-archive")
+    TRANSCRIPT_REF="$ARCHIVE_DIR/$SID.jsonl"
+  fi
+
+  git interpret-trailers --in-place \
+    --trailer "AI-Model: $AI_MODEL" \
+    --trailer "AI-Session: $SID" \
+    --trailer "AI-Transcript: $TRANSCRIPT_REF" \
+    "$MSG_FILE"
+else
+  git interpret-trailers --in-place --trailer "AI-Assisted: none" "$MSG_FILE"
+fi

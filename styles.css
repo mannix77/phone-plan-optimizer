@@ -71,14 +71,79 @@ h1 {
 }
 
 #inputs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 16px;
   margin-bottom: 20px;
+}
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+#inputs label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+#inputs label.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+#line-editor { display: flex; flex-direction: column; gap: 8px; }
+.path-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px 12px;
+  margin: 0;
+}
+.path-picker legend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  padding-inline: 4px;
+}
+.line-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.line-label { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.line-row select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 0;
+}
+@media (max-width: 480px) {
+  .line-row { grid-template-columns: 56px 1fr; }
+  .line-row .line-tradein { grid-column: 2; }
+}
+.qci {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  background: var(--warn-bg);
+  border-radius: 99px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  cursor: help;
+  white-space: nowrap;
 }
 #inputs label {
   display: flex;
@@ -138,7 +203,7 @@ summary:focus-visible {
   border: 1px solid var(--line);
   border-radius: 10px;
 }
-table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 760px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; min-width: 860px; }
 th {
   text-align: left;
   font-size: 0.72rem;
@@ -176,6 +241,8 @@ td.total { font-weight: 700; }
   vertical-align: middle;
 }
 .est { color: var(--warn); font-weight: 700; margin-left: 2px; cursor: help; }
+.best-pill { background: var(--best-bg); color: var(--accent); border: 1px solid var(--accent); }
+.best-path-note { margin-top: 6px; font-size: 0.88rem; color: var(--muted); }
 
 details summary {
   cursor: pointer;
