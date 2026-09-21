@@ -221,7 +221,8 @@ Then("every plan in the offer data has a QCI entry", function () {
 
 Then("every plan has a positive per-line price for 1 through 5 lines", function () {
   for (const p of offers.PLANS) {
-    for (const n of [1, 2, 3, 4, 5]) {
+    const max = p.segment && p.segment.maxLines ? Math.min(5, p.segment.maxLines) : 5;
+    for (let n = 1; n <= max; n++) {
       assert.ok(p.perLine[n] && p.perLine[n].price > 0, `plan ${p.id} has no price for ${n} lines`);
     }
   }
@@ -298,8 +299,14 @@ Then("the {string} plan is included", function (key) {
 Then("the excluded-by-needs count plus included plans equals the total plans considered", function () {
   const result = engine.computeScenarios(this.data, this.input);
   const includedPlans = new Set(result.rows.map((r) => r.plan.id)).size;
-  const considered = this.data.PLANS.filter((p) => !p.mvno || this.input.includeMvnos).length;
-  assert.strictEqual(result.excludedByNeeds.length + includedPlans, considered);
+  const seg = this.input.segment && this.input.segment !== "none" ? this.input.segment : null;
+  const considered = this.data.PLANS.filter(
+    (p) => (!p.mvno || this.input.includeMvnos) && (!p.segment || (seg && p.segment.ids.includes(seg)))
+  ).length;
+  assert.strictEqual(
+    result.excludedByNeeds.length + result.excludedByEligibility.length + includedPlans,
+    considered
+  );
 });
 
 Then("the first row's plan is included", function () {
@@ -362,7 +369,12 @@ Then("the classification has exactly one option per plan", function () {
     assert.ok(!seen.has(o.plan.id), `plan ${o.plan.id} appears twice`);
     seen.add(o.plan.id);
   }
-  const expected = offers.PLANS.filter((p) => !p.mvno || this.input.includeMvnos).length;
+  const seg = this.input.segment && this.input.segment !== "none" ? this.input.segment : null;
+  const expected = offers.PLANS.filter(
+    (p) =>
+      (!p.mvno || this.input.includeMvnos) &&
+      (!p.segment || (seg && p.segment.ids.includes(seg) && (!p.segment.maxLines || this.input.lines <= p.segment.maxLines)))
+  ).length;
   assert.strictEqual(seen.size, expected);
 });
 
@@ -427,5 +439,39 @@ Then("every trade-in device has a valid tier, eligibility flag, and an https sou
     assert.ok(typeof t.carrierEligible === "boolean", `trade-in ${t.id} missing carrierEligible`);
     assert.ok(typeof t.label === "string" && t.label.length > 0, `trade-in ${t.id} missing label`);
     assert.ok(typeof t.source === "string" && t.source.startsWith("https://"), `trade-in ${t.id} lacks an https source`);
+  }
+});
+
+// ---------------------------------------------------------- Segments
+
+Given("the user qualifies for {string} pricing", function (segment) {
+  this.input.segment = segment;
+});
+
+Then("the {string} plan is not considered", function (key) {
+  assert.ok(
+    offers.PLANS.some((p) => `${p.carrier} ${p.name}` === key),
+    `no plan named "${key}" exists in the data at all`
+  );
+  assert.ok(!this.rows.some((r) => planKey(r) === key), `${key} has rows`);
+});
+
+Then("the {string} plan is excluded by its line limit", function (key) {
+  const result = engine.computeScenarios(this.data, this.input);
+  assert.ok(
+    result.excludedByEligibility.some((p) => `${p.carrier} ${p.name}` === key),
+    `${key} was not excluded by eligibility`
+  );
+  assert.ok(!this.rows.some((r) => planKey(r) === key), `${key} still has rows`);
+});
+
+Then("every segment plan has valid eligibility ids and prices up to its line cap", function () {
+  const VALID = ["plus55", "military", "firstResponder", "student", "healthcare", "teacher"];
+  const segmentPlans = offers.PLANS.filter((p) => p.segment);
+  assert.ok(segmentPlans.length >= 6, `only ${segmentPlans.length} segment plans`);
+  for (const p of segmentPlans) {
+    assert.ok(Array.isArray(p.segment.ids) && p.segment.ids.length > 0, `plan ${p.id} has no eligibility ids`);
+    for (const id of p.segment.ids) assert.ok(VALID.includes(id), `plan ${p.id} has unknown segment id ${id}`);
+    assert.ok(qci.QCI_BY_PLAN[p.id], `segment plan ${p.id} has no QCI entry`);
   }
 });

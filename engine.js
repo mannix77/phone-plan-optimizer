@@ -144,34 +144,53 @@ function lineCost(data, pathKey, plan, device, tradeIn, lineNo) {
   };
 }
 
-// Plan cost over 24 months for a line count, honoring intro pricing.
-// Taxes and fees are NOT included anywhere in the calculations — they
-// vary by state and locality, and the UI says so; plans whose price
-// includes taxes (taxesIncluded) note that themselves.
-function planCost24(plan, lines) {
+// Plan cost over 24 months for a line count, honoring intro pricing and
+// any eligibility-segment discount the plan offers (a percent off, or an
+// account-level monthly credit by line count). Taxes and fees are NOT
+// included anywhere in the calculations — they vary by state and
+// locality, and the UI says so; plans whose price includes taxes
+// (taxesIncluded) note that themselves.
+function planCost24(plan, lines, segment) {
   const normal = plan.perLine[lines].price;
   const introMonths = plan.intro ? plan.intro.months : 0;
   const introPrice = plan.intro ? plan.intro.perLine : 0;
-  return introMonths * introPrice * lines + (24 - introMonths) * normal * lines;
+  const planOnly = introMonths * introPrice * lines + (24 - introMonths) * normal * lines;
+  const d = plan.segmentDiscounts && segment ? plan.segmentDiscounts[segment] : null;
+  if (!d) return planOnly;
+  if (d.percent) return planOnly * (1 - d.percent);
+  if (d.perAccountMonthly) return planOnly - (d.perAccountMonthly[lines] || 0) * 24;
+  return planOnly;
 }
 
 function computeScenarios(data, input) {
   const deviceById = (id) => data.DEVICES.find((d) => d.id === id);
   const rows = [];
   const excludedByNeeds = [];
+  const excludedByEligibility = [];
+  const segment = input.segment && input.segment !== "none" ? input.segment : null;
   const deviceLines = input.lineConfigs
     .map((c, i) => ({ ...c, lineNo: i + 1 }))
     .filter((c) => c.deviceId !== "none");
 
   for (const plan of data.PLANS) {
     if (plan.mvno && !input.includeMvnos) continue;
+    // Eligibility segments: a segment plan appears only for its segment,
+    // and drops out with a stated reason past its line cap.
+    if (plan.segment) {
+      if (!segment || !plan.segment.ids.includes(segment)) continue;
+      if (plan.segment.maxLines && input.lines > plan.segment.maxLines) {
+        excludedByEligibility.push(plan);
+        continue;
+      }
+    }
     if (!matchesNeeds(plan, input.needs)) {
       excludedByNeeds.push(plan);
       continue;
     }
     const line = plan.perLine[input.lines];
     if (!line) continue;
-    const plan24 = planCost24(plan, input.lines);
+    const plan24 = planCost24(plan, input.lines, segment);
+    const segmentDiscounted = plan24 !== planCost24(plan, input.lines, null);
     const planMonthly = plan24 / 24;
 
     const leaseAvailable =
@@ -190,6 +209,7 @@ function computeScenarios(data, input) {
       let upfront = 0, paid24 = 0, owedAt24 = 0, creditsApplied = 0;
       let notes = [];
       let anyPromo = false;
+      if (segmentDiscounted) notes.push("Eligibility discount applied to the plan price — verification required at signup.");
       if (pathKey !== "byod") {
         if (plan.mvno && pathKey === "mfr") {
           notes.push(`${plan.carrier}'s own device offers aren't in the data yet — devices priced direct from the maker.`);
@@ -242,7 +262,7 @@ function computeScenarios(data, input) {
   }
   for (const r of rows) r.bestForPlan = bestByPlan.get(r.plan.id) === r;
   rows.sort((a, b) => a.effective24 - b.effective24);
-  return { rows, deviceLines, excludedByNeeds };
+  return { rows, deviceLines, excludedByNeeds, excludedByEligibility };
 }
 
 // ------------------------------------------------ Result classification

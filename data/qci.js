@@ -48,6 +48,15 @@ const QCI_BY_PLAN = {
   "att-value": { value: 8, note: "Priority (QCI 8) for the plan's 5GB premium-data allotment, then deprioritized (QCI 9).", allotment: true },
   "att-extra": { value: 8, note: "Priority (QCI 8) for the plan's 75GB premium-data allotment, then deprioritized (QCI 9).", allotment: true },
   "att-premium": { value: 8, note: "Unlimited premium data at AT&T postpaid priority." },
+  "tmo-choice55": { value: 7, note: "Essentials-family priority (QCI 7) — verify." },
+  "tmo-more55": { value: 6, note: "Experience-family top priority (QCI 6)." },
+  "tmo-beyond55": { value: 6, note: "Experience-family top priority (QCI 6)." },
+  "tmo-essentials-heroes": { value: 7, note: "Essentials-family priority (QCI 7) — verify." },
+  "tmo-more-military": { value: 6, note: "Experience-family top priority (QCI 6)." },
+  "tmo-beyond-fr": { value: 6, note: "Experience-family top priority (QCI 6)." },
+  "tmo-student": { value: 7, note: "Essentials-family priority (QCI 7) — verify." },
+  "vzw-55plus": { value: 9, note: "Priority level not published — assumed deprioritized like Verizon's base plans; verify." },
+  "att-55plus": { value: 9, note: "Priority level not published — assumed deprioritized; verify." },
   "cricket": { value: 9, note: "Most Cricket lines are deprioritized on AT&T (the Unlimited + 15GB hotspot tier rides at QCI 8)." },
 };
 

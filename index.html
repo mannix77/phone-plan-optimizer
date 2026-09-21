@@ -63,6 +63,17 @@
           <label class="wiz-field">Still owed on current phones ($ total, 0 if none)
             <input id="in-current-balance" type="number" min="0" step="10" value="0">
           </label>
+          <label class="wiz-field">Anyone qualify for special pricing?
+            <select id="in-segment">
+              <option value="none" selected>No / not sure</option>
+              <option value="plus55">55 or older</option>
+              <option value="military">Military or veteran</option>
+              <option value="firstResponder">First responder</option>
+              <option value="healthcare">Healthcare worker</option>
+              <option value="teacher">Teacher</option>
+              <option value="student">Student</option>
+            </select>
+          </label>
           <label class="wiz-field">How old are your current phones, mostly?
             <select id="in-phone-age">
               <option value="under2">Under 2 years</option>
@@ -175,6 +186,7 @@
     <h2 class="verdict" id="verdict"></h2>
     <div class="banner" id="availability-note" hidden></div>
     <div class="banner" id="needs-note" hidden></div>
+  <div class="banner" id="eligibility-note" hidden></div>
     <div id="hero-cards"></div>
     <h2 class="ranked-title" id="ranked-title"></h2>
     <div id="ranked-list"></div>
