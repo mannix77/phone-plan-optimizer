@@ -93,5 +93,19 @@ Feature: MVNO coverage
     Then the "Metro Metro Starter Plus" plan is included
     And the "Metro Metro Flex Unlimited Plus" plan is included
 
-  Scenario: The catalog covers at least twenty-four MVNO plans
-    Then the data includes at least 24 MVNO plans
+  Scenario: Cricket's 2026 lineup is priced with AutoPay, taxes-in rates
+    When the scenarios are computed
+    Then the "Cricket Sensible 10GB" rows have a 24-month plan cost of 720.00
+    And the "Cricket Smart Unlimited" rows have a 24-month plan cost of 1080.00
+    And the "Cricket Supreme Unlimited" rows have a 24-month plan cost of 1320.00
+
+  Scenario: Cricket's published four-line rates are used and not estimated
+    Given 4 lines with no new devices
+    And MVNOs are included
+    When the scenarios are computed
+    Then the "Cricket Smart Unlimited" rows have a 24-month plan cost of 2640.00
+    And the "Cricket Supreme Unlimited" rows have a 24-month plan cost of 3120.00
+    And the "Cricket Supreme Unlimited" rows are not flagged as estimated
+
+  Scenario: The catalog covers at least twenty-six MVNO plans
+    Then the data includes at least 26 MVNO plans
