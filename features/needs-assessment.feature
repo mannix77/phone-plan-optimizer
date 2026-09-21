@@ -50,6 +50,13 @@ Feature: Needs-based plan recommendation
     And the "T-Mobile Experience Beyond" plan is included
     And the "AT&T Premium 2.0" plan is included
 
+  Scenario: A very large hotspot need leaves only the hotspot-heavy top tiers
+    Given the user needs "maximum" data, 200 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "AT&T Premium 2.0" plan is excluded by needs
+    And the "AT&T Elite 2.0" plan is included
+    And the "Verizon Unlimited Ultimate" plan is included
+
   Scenario: MVNOs without priority data are excluded when priority data is needed
     Given MVNOs are included
     And the user needs "moderate" data, 0 GB of hotspot, and no international use

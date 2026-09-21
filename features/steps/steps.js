@@ -363,6 +363,11 @@ Then("the {string} option carries the {string} differentiator", function (key, d
   assert.ok(o.diffs.includes(diff), `${key} diffs are: ${o.diffs.join(", ") || "(none)"}`);
 });
 
+Then("the {string} option does not carry the {string} differentiator", function (key, diff) {
+  const o = optionFor(this.classified, key);
+  assert.ok(!o.diffs.includes(diff), `${key} unexpectedly carries "${diff}"`);
+});
+
 Then("the classification has exactly one option per plan", function () {
   const seen = new Set();
   for (const o of this.classified.options) {

@@ -21,9 +21,10 @@ Feature: Result classification — best option, cheapest option, differentiators
     Then the best option is "Verizon Unlimited Ultimate"
     And the best option is not the cheapest option
 
-  Scenario: A unique hotspot superlative is a differentiator
+  Scenario: A hotspot superlative shared by two plans differentiates neither
     When the results are classified
-    Then the "T-Mobile Experience Beyond" option carries the "Most high-speed hotspot" differentiator
+    Then the "T-Mobile Experience Beyond" option does not carry the "Most high-speed hotspot" differentiator
+    And the "AT&T Elite 2.0" option does not carry the "Most high-speed hotspot" differentiator
 
   Scenario: A feature most options lack is a differentiator
     When the results are classified
