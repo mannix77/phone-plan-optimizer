@@ -1,0 +1,43 @@
+name: Weekly source check
+
+# The data pipeline's detection stage: probes every source URL cited in
+# the data files (see scripts/data-pipeline/), reports unreachable
+# sources and content drift, and opens an issue when anything needs
+# re-verification. Updates flow through ordinary PRs that the BDD
+# data-integrity scenarios validate; merge deploys.
+
+on:
+  schedule:
+    - cron: "0 14 * * 4"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Probe sources
+        run: node scripts/data-pipeline/check-sources.mjs | tee report.md
+      - name: Open issue when action is needed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const report = fs.readFileSync("report.md", "utf8");
+            if (!/Unreachable|drift/.test(report)) {
+              console.log("Nothing to flag.");
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Source check needs attention — ${new Date().toISOString().slice(0, 10)}`,
+              body: report + "\n\nRe-verify the flagged items, update the `data/` files in a PR (the BDD data-integrity scenarios validate it), and refresh the snapshot with `npm run check-sources -- --write`.",
+            });

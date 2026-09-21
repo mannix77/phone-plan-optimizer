@@ -37,3 +37,6 @@ Feature: QCI reference and offer data integrity
 
   Scenario: Every plan defines the features the needs assessment asks about
     Then every plan has a complete features block with an https source
+
+  Scenario: The source manifest collects every citation for the pipeline
+    Then the source manifest lists at least 40 distinct https sources and every data item contributes one
