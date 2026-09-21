@@ -6,7 +6,7 @@
   <header>
     <h1>Phone Plan Optimizer</h1>
     <p class="subtitle">
-      Answer four quick questions and get a recommendation: the plan you
+      Answer a few quick questions and get a recommendation: the plan you
       need, the carrier that offers it best, and the smartest way to get
       your phone — by true 24-month cost.
     </p>
@@ -14,140 +14,171 @@
 
   <div class="banner">
     Offer data was collected from public sources on <strong id="data-date"></strong>
-    and covers a sample of major US offers — verify any result on the
-    carrier's site before buying.
+    — verify any result on the carrier's site before buying.
   </div>
   <div class="banner" id="stale-note" hidden></div>
 
-  <form id="wizard" onsubmit="return false">
-    <ol id="stepper">
-      <li data-step="1">Today</li>
-      <li data-step="2">Data needs</li>
-      <li data-step="3">Devices</li>
-      <li data-step="4">Paying</li>
-    </ol>
+  <div class="app-shell" id="app-shell">
+    <aside id="rail">
+      <div class="rail-brand">Your consultation</div>
+      <div id="rail-answers"></div>
+      <ol id="stepper">
+        <li data-step="1">Today</li>
+        <li data-step="2">Data needs</li>
+        <li data-step="3">Devices</li>
+        <li data-step="4">Paying</li>
+        <li data-step="5">Confirm</li>
+      </ol>
+    </aside>
 
-    <section class="step" data-step="1">
-      <h2>Where are you today?</h2>
-      <p class="step-help">Your current setup is the baseline every option gets compared against — and it lets the next questions answer themselves.</p>
-      <div class="controls-grid">
-        <label class="wiz-field">Lines on your account
-          <select id="in-lines">
-            <option value="1">1 line</option>
-            <option value="2">2 lines</option>
-            <option value="3">3 lines</option>
-            <option value="4" selected>4 lines</option>
-            <option value="5">5 lines</option>
-          </select>
-        </label>
-        <label class="wiz-field">Current carrier
-          <select id="in-current-carrier">
-            <option value="" selected>Prefer not to say / other</option>
-            <option>Verizon</option>
-            <option>T-Mobile</option>
-            <option>AT&amp;T</option>
-            <option>Visible</option>
-            <option>Mint Mobile</option>
-            <option>Metro</option>
-            <option>Cricket</option>
-          </select>
-        </label>
-        <label class="wiz-field">Service-only cost today ($/mo, whole account)
-          <input id="in-current-monthly" type="number" min="0" step="1" placeholder="e.g. 120">
-        </label>
-        <label class="wiz-field">Still owed on current phones ($ total, 0 if none)
-          <input id="in-current-balance" type="number" min="0" step="10" value="0">
-        </label>
-        <label class="wiz-field">How old are your current phones, mostly?
-          <select id="in-phone-age">
-            <option value="under2">Under 2 years</option>
-            <option value="twoToFour" selected>2–4 years</option>
-            <option value="overFour">Over 4 years</option>
-            <option value="none">No phones / not sure</option>
-          </select>
-        </label>
+    <form id="wizard" onsubmit="return false">
+      <section class="step" data-step="1">
+        <h2>Where are you today?</h2>
+        <p class="step-help">Your current setup is the baseline every option gets compared against — and it lets later questions answer themselves.</p>
+        <div class="controls-grid">
+          <label class="wiz-field">Lines on your account
+            <select id="in-lines">
+              <option value="1">1 line</option>
+              <option value="2">2 lines</option>
+              <option value="3">3 lines</option>
+              <option value="4" selected>4 lines</option>
+              <option value="5">5 lines</option>
+            </select>
+          </label>
+          <label class="wiz-field">Current carrier
+            <select id="in-current-carrier">
+              <option value="" selected>Prefer not to say / other</option>
+              <option>Verizon</option>
+              <option>T-Mobile</option>
+              <option>AT&amp;T</option>
+              <option>Visible</option>
+              <option>Mint Mobile</option>
+              <option>Metro</option>
+              <option>Cricket</option>
+            </select>
+          </label>
+          <label class="wiz-field">Service-only cost today ($/mo, whole account)
+            <input id="in-current-monthly" type="number" min="0" step="1" placeholder="e.g. 120">
+          </label>
+          <label class="wiz-field">Still owed on current phones ($ total, 0 if none)
+            <input id="in-current-balance" type="number" min="0" step="10" value="0">
+          </label>
+          <label class="wiz-field">How old are your current phones, mostly?
+            <select id="in-phone-age">
+              <option value="under2">Under 2 years</option>
+              <option value="twoToFour" selected>2&ndash;4 years</option>
+              <option value="overFour">Over 4 years</option>
+              <option value="none">No phones / not sure</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="step" data-step="2" hidden>
+        <h2>How does your household use data?</h2>
+        <p class="step-help">Every plan includes unlimited calls and texts. What separates plans is how fast you stay when towers are busy.</p>
+        <div class="choice-grid">
+          <label class="choice-card"><input type="radio" name="datause" value="light" checked>
+            <span class="choice-title">Light</span>
+            <span class="choice-desc">Texting, maps, some social. Fine if speeds dip when towers are busy.</span>
+            <span class="choice-meta">Under 5GB / line</span>
+          </label>
+          <label class="choice-card"><input type="radio" name="datause" value="moderate">
+            <span class="choice-title">Moderate</span>
+            <span class="choice-desc">Streaming and video calls on the go. You notice slowdowns.</span>
+            <span class="choice-meta">5&ndash;30GB / line at full priority</span>
+          </label>
+          <label class="choice-card"><input type="radio" name="datause" value="heavy">
+            <span class="choice-title">Heavy</span>
+            <span class="choice-desc">Daily video, gaming, big uploads away from wifi.</span>
+            <span class="choice-meta">30&ndash;75GB / line at full priority</span>
+          </label>
+          <label class="choice-card"><input type="radio" name="datause" value="maximum">
+            <span class="choice-title">Maximum</span>
+            <span class="choice-desc">Phone is your primary connection. Never deprioritized.</span>
+            <span class="choice-meta">Always-unlimited priority data</span>
+          </label>
+        </div>
+        <div class="wiz-field" style="margin-top: 16px;">High-speed hotspot needed
+          <div class="pill-row">
+            <label class="pill-choice"><input type="radio" name="hotspot" value="0" checked><span>None</span></label>
+            <label class="pill-choice"><input type="radio" name="hotspot" value="15"><span>Up to 15GB</span></label>
+            <label class="pill-choice"><input type="radio" name="hotspot" value="60"><span>Up to 60GB</span></label>
+            <label class="pill-choice"><input type="radio" name="hotspot" value="150"><span>150GB or more</span></label>
+          </div>
+        </div>
+        <label class="check"><input id="in-intl" type="checkbox"> I use my phone internationally</label>
+      </section>
+
+      <section class="step" data-step="3" hidden>
+        <h2>Does anyone need a new phone?</h2>
+        <p class="step-help">Pick a phone, or "no new device" — keeping your current phones is always compared too.</p>
+        <div id="uniform-inputs">
+          <div class="choice-grid" id="device-cards"></div>
+          <div class="device-controls">
+            <div class="wiz-field">Lines getting it
+              <div class="stepper-row">
+                <button type="button" id="dev-minus" aria-label="Fewer lines">&minus;</button>
+                <input id="in-newdevices" type="number" min="0" max="5" value="2" aria-label="Lines getting the new device">
+                <button type="button" id="dev-plus" aria-label="More lines">+</button>
+                <span class="stepper-of" id="stepper-of"></span>
+              </div>
+            </div>
+            <label class="wiz-field">Trade-in per new device
+              <select id="in-tradein">
+                <option value="none">No trade-in</option>
+                <option value="older" selected>Older flagship (~3 yrs)</option>
+                <option value="recent">Recent flagship (last year)</option>
+              </select>
+            </label>
+          </div>
+          <div class="banner" id="tradein-hint" hidden></div>
+        </div>
+        <label class="check"><input id="in-customlines" type="checkbox"> Pick a different device per line</label>
+        <div id="line-editor" hidden></div>
+      </section>
+
+      <section class="step" data-step="4" hidden>
+        <h2>How would you consider paying for the phones?</h2>
+        <p class="step-help">Leave them all checked to let the comparison decide — every path is ranked by true 24-month cost.</p>
+        <div class="path-list">
+          <label class="check"><input class="path-option" type="checkbox" value="carrier" checked> Finance through the carrier (promo credits, 36-month terms)</label>
+          <label class="check"><input class="path-option" type="checkbox" value="mfr" checked> Finance through the manufacturer (0% for 24 months)</label>
+          <label class="check"><input class="path-option" type="checkbox" value="outright" checked> Buy outright</label>
+          <label class="check"><input class="path-option" type="checkbox" value="lease" checked> Lease / upgrade program</label>
+          <label class="check"><input class="path-option" type="checkbox" value="byod"> Also show plan-only (keep current phones)</label>
+        </div>
+        <div class="controls-grid">
+          <label class="check"><input id="in-mvnos" type="checkbox"> Include prepaid / MVNOs (cheaper, lower network priority)</label>
+          <label class="wiz-field">Est. taxes &amp; fees ($/line/mo)
+            <input id="in-fees" type="number" min="0" step="0.5" value="0">
+          </label>
+        </div>
+      </section>
+
+      <section class="step" data-step="5" hidden>
+        <h2>Here's what I heard &mdash; anything wrong?</h2>
+        <p class="step-help">Your recommendation is built from these answers. Fix anything before we run the numbers — nothing is calculated until you confirm.</p>
+        <div id="confirm-body"></div>
+      </section>
+
+      <div class="wiz-nav">
+        <button type="button" id="btn-back" disabled>Back</button>
+        <button type="button" id="btn-next" class="primary">Next</button>
       </div>
-    </section>
-
-    <section class="step" data-step="2" hidden>
-      <h2>How do you use data?</h2>
-      <p class="step-help">
-        Every plan includes unlimited calls and texts, so what actually
-        separates plans is priority data (how fast you stay when towers
-        are busy), hotspot data, and international use.
-      </p>
-      <label class="wiz-field">Fast data per line, monthly
-        <select id="in-datause">
-          <option value="light" selected>Light — under 5GB, OK if slowed when towers are busy</option>
-          <option value="moderate">Moderate — 5–30GB at full priority</option>
-          <option value="heavy">Heavy — 30–75GB at full priority</option>
-          <option value="maximum">Maximum — always-unlimited priority data</option>
-        </select>
-      </label>
-      <label class="wiz-field">High-speed hotspot needed
-        <select id="in-hotspot">
-          <option value="0" selected>None</option>
-          <option value="15">Up to 15GB</option>
-          <option value="60">Up to 60GB</option>
-          <option value="150">150GB or more</option>
-        </select>
-      </label>
-      <label class="check"><input id="in-intl" type="checkbox"> I use my phone internationally</label>
-    </section>
-
-    <section class="step" data-step="3" hidden>
-      <h2>Does anyone need a new phone?</h2>
-      <p class="step-help">Trade-ins matter — they unlock the biggest carrier promos and cut manufacturer prices.</p>
-      <div class="controls-grid" id="uniform-inputs">
-        <label class="wiz-field">New device
-          <select id="in-device"></select>
-        </label>
-        <label class="wiz-field">How many lines get it
-          <input id="in-newdevices" type="number" min="0" max="5" value="2">
-        </label>
-        <label class="wiz-field">Trade-in per new device
-          <select id="in-tradein">
-            <option value="none">No trade-in</option>
-            <option value="older" selected>Older flagship (~3 yrs)</option>
-            <option value="recent">Recent flagship (last year)</option>
-          </select>
-        </label>
-      </div>
-      <label class="check"><input id="in-customlines" type="checkbox"> Pick a different device per line</label>
-      <div id="line-editor" hidden></div>
-    </section>
-
-    <section class="step" data-step="4" hidden>
-      <h2>How would you consider paying for the phones?</h2>
-      <p class="step-help">Leave them all checked to let the comparison decide — it ranks every path by true 24-month cost.</p>
-      <div class="path-list">
-        <label class="check"><input class="path-option" type="checkbox" value="carrier" checked> Finance through the carrier (promo credits, 36-month terms)</label>
-        <label class="check"><input class="path-option" type="checkbox" value="mfr" checked> Finance through the manufacturer (0% for 24 months)</label>
-        <label class="check"><input class="path-option" type="checkbox" value="outright" checked> Buy outright</label>
-        <label class="check"><input class="path-option" type="checkbox" value="lease" checked> Lease / upgrade program</label>
-        <label class="check"><input class="path-option" type="checkbox" value="byod"> Also show plan-only (keep current phones)</label>
-      </div>
-      <div class="controls-grid">
-        <label class="check"><input id="in-mvnos" type="checkbox"> Include prepaid / MVNOs (cheaper, lower network priority)</label>
-        <label class="wiz-field">Est. taxes &amp; fees ($/line/mo)
-          <input id="in-fees" type="number" min="0" step="0.5" value="0">
-        </label>
-      </div>
-    </section>
-
-    <div class="wiz-nav">
-      <button type="button" id="btn-back" disabled>Back</button>
-      <button type="button" id="btn-next" class="primary">Next</button>
-    </div>
-  </form>
+    </form>
+  </div>
 
   <section id="results" hidden>
     <button type="button" id="btn-edit">&larr; Adjust my answers</button>
+    <h2 class="verdict" id="verdict"></h2>
     <div class="banner" id="availability-note" hidden></div>
     <div class="banner" id="needs-note" hidden></div>
     <div id="hero-cards"></div>
     <h2 class="ranked-title" id="ranked-title"></h2>
     <div id="ranked-list"></div>
+    <button type="button" id="btn-tail" hidden></button>
+    <div id="tail-list" hidden></div>
     <div class="banner" id="estimate-note" hidden>
       * This option's multi-line price was not published by the source and is
       an estimate — check the carrier's site.
@@ -167,7 +198,7 @@
     <footer>
       <p id="qci-legend" hidden></p>
       <p>
-        True 24-month cost = everything paid in months 1–24 plus any device
+        True 24-month cost = everything paid in months 1&ndash;24 plus any device
         balance still owed at month 24, so financing that stretches past 24
         months isn't artificially cheap. Plan prices assume autopay; taxes and
         fees are extra unless the option says otherwise or you added an

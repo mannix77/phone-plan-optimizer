@@ -404,3 +404,18 @@ Then("every option's savings versus today equals {int} minus its true cost", fun
 Then("a current phone that is {string} suggests the {string} trade-in", function (age, tradeIn) {
   assert.strictEqual(engine.suggestTradeIn(age), tradeIn);
 });
+
+// --------------------------------------------------- Best premium
+
+Then("the best-option premium is {float}", function (expected) {
+  assertClose(engine.bestPremium(this.classified).amount, expected, "best premium");
+});
+
+Then("the best-option gains include {string}", function (gain) {
+  const gains = engine.bestPremium(this.classified).gains;
+  assert.ok(gains.includes(gain), `gains are: ${gains.join(", ") || "(none)"}`);
+});
+
+Then("the best option is the cheapest option", function () {
+  assert.strictEqual(this.classified.best, this.classified.cheapest);
+});

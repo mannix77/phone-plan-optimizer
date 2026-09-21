@@ -322,6 +322,28 @@ function suggestTradeIn(phoneAge) {
   return { under2: "recent", twoToFour: "older", overFour: "none", none: "none" }[phoneAge] || "none";
 }
 
+
+// What choosing the best option over the cheapest costs and buys: the
+// true-cost difference and the features gained. Drives the "worth $X
+// more for ..." line in the results.
+function bestPremium(classified) {
+  const { best, cheapest } = classified;
+  if (!best || !cheapest || best === cheapest) return { amount: 0, gains: [] };
+  const fb = best.plan.features || {};
+  const fc = cheapest.plan.features || {};
+  const prem = (f) => (f.premiumData === "unlimited" ? Infinity : f.premiumData || 0);
+  const gains = [];
+  if (prem(fb) > prem(fc)) {
+    gains.push(fb.premiumData === "unlimited" ? "unlimited priority data" : `${fb.premiumData}GB priority data`);
+  }
+  if ((fb.hotspotGB || 0) > (fc.hotspotGB || 0)) gains.push(`${fb.hotspotGB}GB hotspot`);
+  if (fb.international && !fc.international) gains.push("international included");
+  if (best.creditsApplied > cheapest.creditsApplied) {
+    gains.push(`${money(best.creditsApplied - cheapest.creditsApplied)} more promo credits`);
+  }
+  return { amount: best.effective24 - cheapest.effective24, gains };
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { TIER_RANK, money, money2, findPromo, matchesNeeds, lineCost, planCost24, computeScenarios, featureScore, classifyResults, savingsVsCurrent, suggestTradeIn };
+  module.exports = { TIER_RANK, money, money2, findPromo, matchesNeeds, lineCost, planCost24, computeScenarios, featureScore, classifyResults, bestPremium, savingsVsCurrent, suggestTradeIn };
 }
