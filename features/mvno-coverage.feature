@@ -18,5 +18,17 @@ Feature: MVNO coverage
     When the scenarios are computed
     Then the "Tello Tello Unlimited" rows carry QCI 7
 
-  Scenario: The catalog covers at least ten MVNO plans
-    Then the data includes at least 10 MVNO plans
+  Scenario: Visible's upper tiers are priced with taxes included
+    When the scenarios are computed
+    Then the "Visible Visible+" rows have a 24-month plan cost of 840.00
+    And the "Visible Visible+ Pro" rows have a 24-month plan cost of 1080.00
+
+  Scenario: Visible's upper tiers carry premium data for the needs assessment
+    Given the user needs "maximum" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "Visible Visible Unlimited" plan is excluded by needs
+    And the "Visible Visible+" plan is included
+    And the "Visible Visible+ Pro" plan is included
+
+  Scenario: The catalog covers at least fourteen MVNO plans
+    Then the data includes at least 14 MVNO plans

@@ -33,6 +33,8 @@ const QCI_BY_PLAN = {
   "vzw-plus": { value: 8, note: "Premium postpaid priority on Verizon." },
   "vzw-ultimate": { value: 8, note: "Premium postpaid priority on Verizon." },
   "visible": { value: 9, note: "Prepaid/MVNO traffic on Verizon is deprioritized behind all postpaid premium data." },
+  "visible-plus": { value: 8, note: "Visible+ carries unlimited premium data — treated as Verizon postpaid priority; verify." },
+  "visible-plus-pro": { value: 8, note: "Visible+ Pro carries unlimited premium data — treated as Verizon postpaid priority; verify." },
 
   // T-Mobile network: QCI 6 = postpaid Experience; QCI 7 = Essentials, Metro, T-Mobile MVNOs
   "tmo-essentials": { value: 7, note: "One step below T-Mobile's top postpaid priority." },
