@@ -480,3 +480,20 @@ Then("the data includes at least {int} MVNO plans", function (min) {
   const count = offers.PLANS.filter((p) => p.mvno).length;
   assert.ok(count >= min, `only ${count} MVNO plans`);
 });
+
+// ------------------------------------------------------ Data pipeline
+
+Then("the source manifest lists at least {int} distinct https sources and every data item contributes one", function (min) {
+  const { collectSources } = require("../../scripts/data-pipeline/collect-sources.js");
+  const entries = collectSources();
+  const urls = new Set(entries.map((e) => e.url));
+  assert.ok(urls.size >= min, `only ${urls.size} distinct sources`);
+  for (const e of entries) {
+    assert.ok(e.url.startsWith("https://"), `${e.id} has a non-https source`);
+    assert.ok(e.id && e.kind, `manifest entry missing id/kind: ${JSON.stringify(e)}`);
+  }
+  const itemsWithSources = new Set(entries.map((e) => e.id.split("#")[0]));
+  for (const p of offers.PLANS) assert.ok(itemsWithSources.has(`plan:${p.id}`), `plan ${p.id} not in manifest`);
+  for (const d of offers.DEVICES) assert.ok(itemsWithSources.has(`device:${d.id}`), `device ${d.id} not in manifest`);
+  for (const t of offers.TRADE_IN_DEVICES) assert.ok(itemsWithSources.has(`tradein:${t.id}`), `trade-in ${t.id} not in manifest`);
+});

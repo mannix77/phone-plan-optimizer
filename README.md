@@ -65,12 +65,26 @@ result on the carrier's site before making a purchase.**
 To update offers, edit the `data/` files only — the engine in `app.js`
 hard-codes no prices or QCI values.
 
-### Toward live offers
+### The data pipeline
 
-Carriers publish no public pricing API, so truly live collection means
-per-carrier scraping, which is fragile and needs its own iteration
-(scheduled job, per-carrier parsers, failure alerting). Until then the
-data files + monthly refresh are the source of truth.
+GitHub Pages is static, so freshness comes from a pipeline around the
+data files rather than on-demand fetching:
+
+1. **Manifest** — every price, feature, promo, and trade-in value cites
+   a source URL; `scripts/data-pipeline/collect-sources.js` assembles
+   them all (plus the aggregate research surfaces Navi and WhistleOut),
+   and the BDD suite requires every data item to contribute one.
+2. **Detection** — a weekly workflow probes every source and opens an
+   issue listing unreachable sources and content drift against the last
+   snapshot (`npm run check-sources`, `--write` to refresh the snapshot).
+3. **Validation** — updates land as ordinary PRs; the BDD data-integrity
+   scenarios (sources present, ids resolve, line counts priced, QCI
+   entries exist) gate the merge.
+4. **Deploy** — merge to `main` ships to Pages immediately.
+
+Carriers publish no pricing API, so the research step stays with a human
+or an agent session; the pipeline's job is to say *what* needs
+re-verification and to make updates safe and small.
 
 ## Disclaimer
 

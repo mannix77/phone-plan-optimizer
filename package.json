@@ -4,7 +4,8 @@
   "private": true,
   "description": "Compare 24-month total cost of ownership for cell phone plan + device combinations",
   "scripts": {
-    "test": "cucumber-js"
+    "test": "cucumber-js",
+    "check-sources": "node scripts/data-pipeline/check-sources.mjs"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^11.2.0"
