@@ -13,12 +13,6 @@ Feature: 24-month plan cost calculation
     When the scenarios are computed
     Then the "Verizon Unlimited Welcome" rows have a 24-month plan cost of 2880.00
 
-  Scenario: The taxes and fees estimate is added per line per month
-    Given 4 lines with no new devices
-    And an estimated taxes and fees of 5.00 per line per month
-    When the scenarios are computed
-    Then the "Verizon Unlimited Welcome" rows have a 24-month plan cost of 3360.00
-
   Scenario: Intro pricing is honored for the intro months only
     Given 1 line with no new devices
     And MVNOs are included

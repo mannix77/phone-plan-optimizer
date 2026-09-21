@@ -72,4 +72,4 @@ Feature: Device purchase path calculations
     And the "AT&T Value 2.0" row for "mfr" has owed at month 24 of 0.00
 
   Scenario: The device catalog covers Apple, Samsung, and Google
-    Then the device catalog includes at least 8 devices from at least 3 makers
+    Then the device catalog includes at least 13 devices from at least 3 makers

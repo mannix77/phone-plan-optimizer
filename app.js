@@ -1,13 +1,14 @@
 /*
- * UI layer: a four-step guided flow, then a classified recommendation.
+ * UI layer: a guided five-step consultation (Today / Data needs /
+ * Devices / Paying / Confirm), then a verdict-first recommendation.
  * All calculations live in engine.js (BDD-tested via features/), all
  * pricing in data/offers.js, and QCI values in data/qci.js — nothing
  * here hard-codes a dollar amount or a QCI number. Results are computed
- * only when the user finishes the questions.
+ * only after the user confirms their answers.
  */
 
 const BIG3 = ["Verizon", "T-Mobile", "AT&T"];
-const LAST_STEP = 4;
+const LAST_STEP = 5;
 
 const ENGINE_DATA = {
   PLANS,
@@ -19,59 +20,154 @@ const ENGINE_DATA = {
 
 const deviceById = (id) => DEVICES.find((d) => d.id === id);
 const $ = (id) => document.getElementById(id);
+const checkedValue = (name) => {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : "";
+};
 
 // ------------------------------------------------------------- Wizard
 
 let step = 1;
+let skippedPaying = false;
+
+const DATA_USE_LABEL = {
+  light: "Light data",
+  moderate: "Moderate data (priority)",
+  heavy: "Heavy data (priority)",
+  maximum: "Maximum data (always priority)",
+};
+
+const AGE_LABEL = { under2: "under 2 years old", twoToFour: "2–4 years old", overFour: "over 4 years old", none: "unknown age" };
+
+function summaries() {
+  const lines = Number($("in-lines").value);
+  const carrier = $("in-current-carrier").value;
+  const monthly = Number($("in-current-monthly").value) || 0;
+  const balance = Number($("in-current-balance").value) || 0;
+  const s = {};
+  s.today =
+    `${lines} line(s)${carrier ? ` on ${carrier}` : ""}` +
+    (monthly ? ` · ${money2(monthly)}/mo service` : "") +
+    (balance ? ` · ${money(balance)} owed on phones` : "") +
+    ` · phones ${AGE_LABEL[$("in-phone-age").value]}`;
+  const hotspot = Number(checkedValue("hotspot"));
+  s.needs =
+    `${DATA_USE_LABEL[checkedValue("datause")]}` +
+    (hotspot ? ` · up to ${hotspot}GB hotspot` : " · no hotspot") +
+    ($("in-intl").checked ? " · international" : "");
+  const cfg = currentLineConfigs();
+  const withDevice = cfg.filter((c) => c.deviceId !== "none");
+  if (withDevice.length === 0) {
+    s.devices = "No new devices — keeping current phones";
+  } else {
+    const names = [...new Set(withDevice.map((c) => deviceById(c.deviceId).name))];
+    s.devices = `${withDevice.length} × ${names.join(" / ")} · trade-in: ${tradeLabel(withDevice[0].tradeIn)}`;
+  }
+  const paths = [...document.querySelectorAll(".path-option:checked")].map((el) => el.value);
+  s.paying =
+    (paths.length === 0 ? "Plan-only comparison" : `Comparing: ${paths.join(", ")}`) +
+    ($("in-mvnos").checked ? " · MVNOs included" : "") +
+    " · taxes not included";
+  return s;
+}
+
+function railCard(label, text, gotoStep) {
+  return `<div class="rail-card">
+    <div class="rail-card-label">${label}</div>
+    <div class="rail-card-text">${text}</div>
+    <button type="button" class="rail-edit" data-goto="${gotoStep}">Edit</button>
+  </div>`;
+}
+
+function renderRail() {
+  const s = summaries();
+  const cards = [];
+  if (step > 1) cards.push(railCard("Today", s.today, 1));
+  if (step > 2) cards.push(railCard("Data needs", s.needs, 2));
+  if (step > 3) cards.push(railCard("Devices", s.devices, 3));
+  if (step > 4 && !skippedPaying) cards.push(railCard("Paying", s.paying, 4));
+  $("rail-answers").innerHTML = cards.join("");
+  for (const btn of document.querySelectorAll(".rail-edit")) {
+    btn.addEventListener("click", () => {
+      step = Number(btn.dataset.goto);
+      showStep();
+    });
+  }
+}
+
+function renderConfirm() {
+  const s = summaries();
+  const card = (label, text, gotoStep) => `<div class="confirm-card">
+    <div>
+      <div class="rail-card-label">${label}</div>
+      <div class="confirm-text">${text}</div>
+    </div>
+    <button type="button" class="rail-edit" data-goto="${gotoStep}">Edit</button>
+  </div>`;
+  $("confirm-body").innerHTML =
+    card("Today", s.today, 1) +
+    card("Data needs", s.needs, 2) +
+    card("Devices", s.devices, 3) +
+    (skippedPaying ? "" : card("Paying", s.paying, 4));
+  for (const btn of document.querySelectorAll("#confirm-body .rail-edit")) {
+    btn.addEventListener("click", () => {
+      step = Number(btn.dataset.goto);
+      showStep();
+    });
+  }
+}
 
 function showStep() {
   for (const panel of document.querySelectorAll(".step")) {
     panel.hidden = Number(panel.dataset.step) !== step;
   }
   for (const li of document.querySelectorAll("#stepper li")) {
-    li.classList.toggle("active", Number(li.dataset.step) === step);
-    li.classList.toggle("done", Number(li.dataset.step) < step);
+    const n = Number(li.dataset.step);
+    li.classList.toggle("active", n === step);
+    li.classList.toggle("done", n < step && !(n === 4 && skippedPaying));
+    li.classList.toggle("skipped", n === 4 && skippedPaying && step > 4);
   }
+  if (step === 3) {
+    $("stepper-of").textContent = `of ${$("in-lines").value}`;
+    tradeInHint();
+  }
+  if (step === 5) renderConfirm();
+  renderRail();
   $("btn-back").disabled = step === 1;
-  $("btn-next").textContent = step === LAST_STEP ? "See my recommendation" : "Next";
+  $("btn-next").textContent =
+    step === 5 ? "Show my recommendation" : step === 4 ? "Review my answers" : "Next";
+}
+
+function anyNewDevices() {
+  return currentLineConfigs().some((c) => c.deviceId !== "none");
 }
 
 $("btn-back").addEventListener("click", () => {
-  if (step > 1) step--;
+  if (step === 5 && skippedPaying) step = 3;
+  else if (step > 1) step--;
   showStep();
 });
 
 $("btn-next").addEventListener("click", () => {
-  // Graph-driven flow: the payment-paths question only exists when a new
-  // device is in play, so it is skipped when nobody needs a phone.
-  if (step === 3 && !anyNewDevices()) {
+  if (step === 5) {
     showResults();
     return;
   }
-  if (step < LAST_STEP) {
-    step++;
-    showStep();
+  // Graph-driven flow: the payment-paths question only exists when a new
+  // device is in play, so it is skipped when nobody needs a phone.
+  if (step === 3 && !anyNewDevices()) {
+    skippedPaying = true;
+    step = 5;
   } else {
-    showResults();
+    if (step === 3) skippedPaying = false;
+    step++;
   }
-});
-
-function anyNewDevices() {
-  if ($("in-customlines").checked) {
-    return [...$("line-editor").querySelectorAll(".line-device")].some((el) => el.value !== "none");
-  }
-  return Number($("in-newdevices").value) > 0;
-}
-
-// Graph-driven prefill: the current phones' age answers the trade-in
-// question before it is asked (the user can still override it).
-$("in-phone-age").addEventListener("input", () => {
-  $("in-tradein").value = suggestTradeIn($("in-phone-age").value);
+  showStep();
 });
 
 $("btn-edit").addEventListener("click", () => {
   $("results").hidden = true;
-  $("wizard").hidden = false;
+  $("app-shell").hidden = false;
   showStep();
 });
 
@@ -84,15 +180,42 @@ function deviceOptions(selected) {
   return `<option value="none" ${selected === "none" ? "selected" : ""}>No new device (BYOD)</option>` + opts.join("");
 }
 
+const GENERIC_TRADE_LABEL = {
+  none: "No trade-in",
+  recent: "Other recent flagship (~last year)",
+  older: "Other older flagship (~3 yrs)",
+};
+
+function tradeLabel(id) {
+  if (GENERIC_TRADE_LABEL[id]) return GENERIC_TRADE_LABEL[id];
+  const t = TRADE_IN_DEVICES.find((x) => x.id === id);
+  return t ? t.label : id;
+}
+
 function tradeInOptions(selected) {
-  return ["none", "older", "recent"]
-    .map(
-      (v) =>
-        `<option value="${v}" ${v === selected ? "selected" : ""}>` +
-        { none: "No trade-in", older: "Older flagship (~3 yrs)", recent: "Recent flagship (last year)" }[v] +
-        "</option>"
-    )
-    .join("");
+  const opt = (v, label) => `<option value="${v}" ${v === selected ? "selected" : ""}>${label}</option>`;
+  return (
+    opt("none", GENERIC_TRADE_LABEL.none) +
+    TRADE_IN_DEVICES.map((t) => opt(t.id, t.label)).join("") +
+    opt("recent", GENERIC_TRADE_LABEL.recent) +
+    opt("older", GENERIC_TRADE_LABEL.older)
+  );
+}
+
+function renderDeviceCards() {
+  $("device-cards").innerHTML =
+    DEVICES.map(
+      (d, i) => `<label class="choice-card choice-device"><input type="radio" name="device" value="${d.id}" ${i === 0 ? "checked" : ""}>
+      <span class="choice-meta">${d.maker}</span>
+      <span class="choice-title">${d.name}</span>
+      <span class="choice-desc">${money2(d.retail)}</span>
+    </label>`
+    ).join("") +
+    `<label class="choice-card choice-device"><input type="radio" name="device" value="none">
+      <span class="choice-meta">Keep current phones</span>
+      <span class="choice-title">No new device</span>
+      <span class="choice-desc">Plan-only comparison</span>
+    </label>`;
 }
 
 function renderLineEditor() {
@@ -121,42 +244,72 @@ $("in-customlines").addEventListener("input", () => {
   if (custom) renderLineEditor();
 });
 
-function readInputs() {
+// Graph-driven prefill: the current phones' age answers the trade-in
+// question before it is asked (the user can still override it).
+function tradeInHint() {
+  const age = $("in-phone-age").value;
+  const hint = $("tradein-hint");
+  if ($("in-tradein").dataset.touched === "yes") {
+    hint.hidden = true;
+    return;
+  }
+  $("in-tradein").value = suggestTradeIn(age);
+  const label = { recent: "Recent flagship", older: "Older flagship", none: "No trade-in" }[suggestTradeIn(age)];
+  hint.hidden = false;
+  hint.innerHTML = `Because your current phones are ${AGE_LABEL[age]}, the trade-in is set to <strong>${label}</strong> — trade-ins unlock the biggest carrier promos. Change it above if that's wrong.`;
+}
+$("in-phone-age").addEventListener("input", tradeInHint);
+$("in-tradein").addEventListener("input", () => {
+  $("in-tradein").dataset.touched = "yes";
+  $("tradein-hint").hidden = true;
+});
+
+// Device-count stepper.
+function clampDevices(delta) {
   const lines = Number($("in-lines").value);
-  const custom = $("in-customlines").checked;
-  let lineConfigs;
-  if (custom) {
+  const el = $("in-newdevices");
+  let v = Number(el.value) + delta;
+  v = Math.max(0, Math.min(lines, v));
+  el.value = String(v);
+}
+$("dev-minus").addEventListener("click", () => clampDevices(-1));
+$("dev-plus").addEventListener("click", () => clampDevices(1));
+
+function currentLineConfigs() {
+  const lines = Number($("in-lines").value);
+  if ($("in-customlines").checked) {
     renderLineEditor();
-    lineConfigs = [...$("line-editor").querySelectorAll(".line-row")].map((row) => ({
+    return [...$("line-editor").querySelectorAll(".line-row")].map((row) => ({
       deviceId: row.querySelector(".line-device").value,
       tradeIn: row.querySelector(".line-tradein").value,
     }));
-  } else {
-    let newDevices = Number($("in-newdevices").value);
-    if (newDevices > lines) {
-      newDevices = lines;
-      $("in-newdevices").value = String(lines);
-    }
-    const deviceId = $("in-device").value;
-    const tradeIn = $("in-tradein").value;
-    lineConfigs = Array.from({ length: lines }, (_, i) =>
-      i < newDevices ? { deviceId, tradeIn } : { deviceId: "none", tradeIn: "none" }
-    );
   }
+  let newDevices = Number($("in-newdevices").value);
+  if (newDevices > lines) {
+    newDevices = lines;
+    $("in-newdevices").value = String(lines);
+  }
+  const deviceId = checkedValue("device") || "none";
+  const tradeIn = $("in-tradein").value;
+  return Array.from({ length: lines }, (_, i) =>
+    i < newDevices && deviceId !== "none" ? { deviceId, tradeIn } : { deviceId: "none", tradeIn: "none" }
+  );
+}
+
+function readInputs() {
   const paths = new Set(
     [...document.querySelectorAll(".path-option:checked")].map((el) => el.value)
   );
   return {
-    lines,
-    lineConfigs,
+    lines: Number($("in-lines").value),
+    lineConfigs: currentLineConfigs(),
     paths,
     needs: {
-      dataUse: $("in-datause").value,
-      hotspotGB: Number($("in-hotspot").value),
+      dataUse: checkedValue("datause"),
+      hotspotGB: Number(checkedValue("hotspot")),
       international: $("in-intl").checked,
     },
     includeMvnos: $("in-mvnos").checked,
-    feesPerLine: Number($("in-fees").value) || 0,
   };
 }
 
@@ -214,6 +367,11 @@ function optionDetail(o, input) {
       (o.plan.intro ? ` (first ${o.plan.intro.months} months at ${money2(o.plan.intro.perLine)}/line)` : "") +
       ` ≈ ${money2(o.planMonthly)}/mo → ${money(o.plan24)} over 24 months.`
   );
+  d.push(
+    o.plan.taxesIncluded
+      ? "This plan's price includes taxes and fees."
+      : "Taxes & fees are not included — they vary by state and locality; validate them for your area."
+  );
   if (o.plan.notes) d.push(o.plan.notes);
   if (o.qci) {
     d.push(`Network priority: QCI ${o.qci.value}${o.plan.mvno ? ` on the ${o.plan.network} network` : ""}. ${o.qci.note}`);
@@ -258,7 +416,7 @@ function currentCarrierChip(o, current) {
 }
 
 function heroCard(o, label, input, why, current) {
-  return `<div class="hero-card ${label === "Best option" ? "hero-best" : ""}">
+  return `<div class="hero-card ${label.startsWith("Best") ? "hero-best" : ""}">
     <div class="hero-label">${label}</div>
     <div class="hero-plan">${o.plan.carrier} ${o.plan.name}${o.estimated ? '<span class="est" title="Multi-line price estimated — verify on carrier site">*</span>' : ""}${qciBadge(o)}</div>
     <div class="hero-path">${o.pathLabel}</div>
@@ -271,10 +429,36 @@ function heroCard(o, label, input, why, current) {
   </div>`;
 }
 
+function optionRow(o, rank, maxEff, input, current, isTop) {
+  const barPct = Math.max(4, Math.round((o.effective24 / maxEff) * 100));
+  return `<div class="option-row ${isTop ? "option-top" : ""}">
+    <div class="option-rank">${rank}</div>
+    <div class="option-main">
+      <div class="option-plan">${o.plan.carrier} ${o.plan.name}${o.estimated ? '<span class="est" title="Multi-line price estimated — verify on carrier site">*</span>' : ""}${qciBadge(o)} <span class="option-path">· ${o.pathLabel}</span></div>
+      <div class="cost-bar"><div class="cost-bar-fill ${isTop ? "" : "cost-bar-muted"}" style="width: ${barPct}%;"></div></div>
+      <div class="chips">${o.diffs.length ? chips(o) : '<span class="chip chip-muted">No standout advantage</span>'}${currentCarrierChip(o, current)}</div>
+      <details><summary>See the math</summary><div class="detail">${optionDetail(o, input)}</div></details>
+    </div>
+    <div class="option-cost">${money(o.effective24)}<div class="option-per">${money2(o.effective24 / 24)}/mo</div></div>
+  </div>`;
+}
+
+function verdictText(input, deviceLines) {
+  const parts = [`For ${input.lines} line(s)`];
+  parts.push(DATA_USE_LABEL[input.needs.dataUse].toLowerCase());
+  if (input.needs.hotspotGB) parts.push(`${input.needs.hotspotGB}GB hotspot`);
+  if (input.needs.international) parts.push("international use");
+  if (deviceLines.length) {
+    const names = [...new Set(deviceLines.map((d) => deviceById(d.deviceId).name))];
+    parts.push(`${deviceLines.length} new ${names.join(" / ")}`);
+  }
+  return `${parts.join(", ")} — here's where you land.`;
+}
+
 function showResults() {
   const input = readInputs();
   const result = computeScenarios(ENGINE_DATA, input);
-  const { rows, deviceLines, excludedByNeeds } = result;
+  const { deviceLines, excludedByNeeds } = result;
 
   availabilityNotice(deviceLines, input);
   const needsNote = $("needs-note");
@@ -292,45 +476,66 @@ function showResults() {
     balance: Number($("in-current-balance").value) || 0,
     carrier: $("in-current-carrier").value,
   };
-  const { options, cheapest, best } = classifyResults(result);
+  const classified = classifyResults(result);
+  const { options, cheapest, best } = classified;
+
+  $("verdict").textContent = options.length ? verdictText(input, deviceLines) : "";
 
   if (!options.length) {
     $("hero-cards").innerHTML = `<div class="hero-card"><div class="hero-plan">No plan in the data meets these needs</div><div class="hero-why">Relax a requirement — hotspot size and international coverage are the usual constraints.</div></div>`;
     $("ranked-title").textContent = "";
     $("ranked-list").innerHTML = "";
+    $("tail-list").innerHTML = "";
+    $("btn-tail").hidden = true;
     $("estimate-note").hidden = true;
   } else {
-    const bestWhy = `The most plan for your needs: ${featureSummary(best.plan)}.`;
+    const premium = bestPremium(classified);
+    const bestWhy =
+      premium.amount > 0
+        ? `Worth ${money(premium.amount)} more than the cheapest for: ${premium.gains.join(", ")}.`
+        : `The most plan for your needs: ${featureSummary(best.plan)}. And nothing qualifying costs less.`;
     const cheapWhy = `The lowest true 24-month cost that still meets your needs.`;
     $("hero-cards").innerHTML =
       (best === cheapest
-        ? heroCard(best, "Best & cheapest option", input, `${bestWhy} And nothing qualifying costs less.`, current)
+        ? heroCard(best, "Best & cheapest option", input, bestWhy, current)
         : heroCard(best, "Best option", input, bestWhy, current) + heroCard(cheapest, "Cheapest option", input, cheapWhy, current)) +
       (current.balance > 0
         ? `<div class="banner">You still owe ${money(current.balance)} on your current phones — that's due (or settled by trade-in) whichever option you pick, so it doesn't change the ranking.</div>`
         : "");
 
+    const maxEff = Math.max(...options.map((o) => o.effective24));
+    const headline = options.filter((o) => o.diffs.length > 0);
+    const tail = options.filter((o) => o.diffs.length === 0);
     $("ranked-title").textContent = `Every qualifying option, ranked (${options.length})`;
-    $("ranked-list").innerHTML = options
-      .map(
-        (o, i) => `<div class="option-row ${o === best || o === cheapest ? "option-top" : ""}">
-        <div class="option-rank">${i + 1}</div>
-        <div class="option-main">
-          <div class="option-plan">${o.plan.carrier} ${o.plan.name}${o.estimated ? '<span class="est" title="Multi-line price estimated — verify on carrier site">*</span>' : ""}${qciBadge(o)} <span class="option-path">· ${o.pathLabel}</span></div>
-          <div class="chips">${o.diffs.length ? chips(o) : '<span class="chip chip-muted">No standout advantage</span>'}${currentCarrierChip(o, current)}</div>
-          <details><summary>See the math</summary><div class="detail">${optionDetail(o, input)}</div></details>
-        </div>
-        <div class="option-cost">${money(o.effective24)}<div class="option-per">${money2(o.effective24 / 24)}/mo</div></div>
-      </div>`
-      )
+    $("ranked-list").innerHTML = headline
+      .map((o, i) => optionRow(o, i + 1, maxEff, input, current, o === best || o === cheapest))
       .join("");
+    if (tail.length) {
+      $("btn-tail").hidden = false;
+      $("btn-tail").textContent = `${tail.length} more option(s) without a standout advantage — show them`;
+      $("tail-list").innerHTML = tail
+        .map((o, i) => optionRow(o, headline.length + i + 1, maxEff, input, current, false))
+        .join("");
+      $("tail-list").hidden = true;
+    } else {
+      $("btn-tail").hidden = true;
+      $("tail-list").innerHTML = "";
+    }
     $("estimate-note").hidden = !options.some((o) => o.estimated);
   }
 
-  $("wizard").hidden = true;
+  $("app-shell").hidden = true;
   $("results").hidden = false;
   window.scrollTo({ top: 0 });
 }
+
+$("btn-tail").addEventListener("click", () => {
+  const list = $("tail-list");
+  list.hidden = !list.hidden;
+  $("btn-tail").textContent = list.hidden
+    ? $("btn-tail").textContent.replace("hide them", "show them")
+    : $("btn-tail").textContent.replace("show them", "hide them");
+});
 
 // -------------------------------------------------------------- Setup
 
@@ -354,9 +559,8 @@ $("plan-defs-body").innerHTML = PLANS.map((p) => {
   return `<p><strong>${p.carrier} ${p.name}</strong> — ${mark("premiumData", premium)} · ${mark("hotspotGB", `${f.hotspotGB}GB high-speed hotspot`)} · ${mark("international", f.international ? "international included" : "no international")}${f.note ? ` <span class="defs-detail">(${f.note})</span>` : ""}</p>`;
 }).join("");
 
-$("in-device").innerHTML = DEVICES.map(
-  (d, i) => `<option value="${d.id}" ${i === 0 ? "selected" : ""}>${d.name}</option>`
-).join("");
+renderDeviceCards();
+$("in-tradein").innerHTML = tradeInOptions("older");
 $("qci-legend").textContent = `* ${QCI_EXPLANATION}`;
 $("data-date").textContent = DATA_RETRIEVED;
 showStep();

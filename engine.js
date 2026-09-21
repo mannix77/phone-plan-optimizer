@@ -48,20 +48,35 @@ const money = (n) =>
 const money2 = (n) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 
-function findPromo(promos, plan, device, tradeIn) {
+function findPromo(promos, plan, device, promoEligible) {
   return promos.find(
     (p) =>
       p.carrier === plan.carrier &&
       p.deviceIds.includes(device.id) &&
       TIER_RANK[plan.tier] >= TIER_RANK[p.requiresTier] &&
-      (!p.requiresTradeIn || tradeIn !== "none")
+      (!p.requiresTradeIn || promoEligible)
   );
+}
+
+// Resolve what the user is trading in: a listed device (its published
+// value for the new device's maker, or its tier's typical value), a
+// generic tier, or nothing. promoEligible says whether carriers accept
+// it toward promo credits.
+function resolveTradeIn(data, tradeIn, maker) {
+  if (!tradeIn || tradeIn === "none") return { value: 0, promoEligible: false };
+  if (tradeIn === "older" || tradeIn === "recent") return { value: null, tier: tradeIn, promoEligible: true };
+  const t = (data.TRADE_IN_DEVICES || []).find((x) => x.id === tradeIn);
+  if (!t) return { value: 0, promoEligible: false };
+  if (t.tier === "none") return { value: 0, promoEligible: false };
+  const value = t.values && t.values[maker] != null ? t.values[maker] : null;
+  return { value, tier: t.tier, promoEligible: t.carrierEligible !== false };
 }
 
 // Cost of one device line under one purchase path. Returns
 // { upfront, paid24, owedAt24, creditsApplied, notes[], promo? }.
 function lineCost(data, pathKey, plan, device, tradeIn, lineNo) {
-  const mfrTrade = tradeIn === "none" ? 0 : device.mfrTradeIn[tradeIn];
+  const resolved = resolveTradeIn(data, tradeIn, device.maker);
+  const mfrTrade = resolved.value != null ? resolved.value : resolved.tier ? device.mfrTradeIn[resolved.tier] : 0;
   const financed = Math.max(0, device.retail - mfrTrade);
   const mfrNotes = mfrTrade
     ? [`Line ${lineNo}: ${money(mfrTrade)} ${device.maker} trade-in credit applied.`]
@@ -100,7 +115,7 @@ function lineCost(data, pathKey, plan, device, tradeIn, lineNo) {
       ],
     };
   }
-  const promo = findPromo(data.CARRIER_PROMOS, plan, device, tradeIn);
+  const promo = findPromo(data.CARRIER_PROMOS, plan, device, resolved.promoEligible);
   const financeMonths = promo ? promo.financeMonths : data.CARRIER_FINANCE_MONTHS;
   const monthly = device.retail / financeMonths;
   let paid24 = Math.min(24, financeMonths) * monthly;
@@ -130,12 +145,14 @@ function lineCost(data, pathKey, plan, device, tradeIn, lineNo) {
 }
 
 // Plan cost over 24 months for a line count, honoring intro pricing.
-function planCost24(plan, lines, feesPerLine) {
+// Taxes and fees are NOT included anywhere in the calculations — they
+// vary by state and locality, and the UI says so; plans whose price
+// includes taxes (taxesIncluded) note that themselves.
+function planCost24(plan, lines) {
   const normal = plan.perLine[lines].price;
   const introMonths = plan.intro ? plan.intro.months : 0;
   const introPrice = plan.intro ? plan.intro.perLine : 0;
-  const planOnly = introMonths * introPrice * lines + (24 - introMonths) * normal * lines;
-  return planOnly + feesPerLine * lines * 24;
+  return introMonths * introPrice * lines + (24 - introMonths) * normal * lines;
 }
 
 function computeScenarios(data, input) {
@@ -154,7 +171,7 @@ function computeScenarios(data, input) {
     }
     const line = plan.perLine[input.lines];
     if (!line) continue;
-    const plan24 = planCost24(plan, input.lines, input.feesPerLine);
+    const plan24 = planCost24(plan, input.lines);
     const planMonthly = plan24 / 24;
 
     const leaseAvailable =
@@ -322,6 +339,28 @@ function suggestTradeIn(phoneAge) {
   return { under2: "recent", twoToFour: "older", overFour: "none", none: "none" }[phoneAge] || "none";
 }
 
+
+// What choosing the best option over the cheapest costs and buys: the
+// true-cost difference and the features gained. Drives the "worth $X
+// more for ..." line in the results.
+function bestPremium(classified) {
+  const { best, cheapest } = classified;
+  if (!best || !cheapest || best === cheapest) return { amount: 0, gains: [] };
+  const fb = best.plan.features || {};
+  const fc = cheapest.plan.features || {};
+  const prem = (f) => (f.premiumData === "unlimited" ? Infinity : f.premiumData || 0);
+  const gains = [];
+  if (prem(fb) > prem(fc)) {
+    gains.push(fb.premiumData === "unlimited" ? "unlimited priority data" : `${fb.premiumData}GB priority data`);
+  }
+  if ((fb.hotspotGB || 0) > (fc.hotspotGB || 0)) gains.push(`${fb.hotspotGB}GB hotspot`);
+  if (fb.international && !fc.international) gains.push("international included");
+  if (best.creditsApplied > cheapest.creditsApplied) {
+    gains.push(`${money(best.creditsApplied - cheapest.creditsApplied)} more promo credits`);
+  }
+  return { amount: best.effective24 - cheapest.effective24, gains };
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { TIER_RANK, money, money2, findPromo, matchesNeeds, lineCost, planCost24, computeScenarios, featureScore, classifyResults, savingsVsCurrent, suggestTradeIn };
+  module.exports = { TIER_RANK, money, money2, findPromo, resolveTradeIn, matchesNeeds, lineCost, planCost24, computeScenarios, featureScore, classifyResults, bestPremium, savingsVsCurrent, suggestTradeIn };
 }
