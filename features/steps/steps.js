@@ -475,3 +475,8 @@ Then("every segment plan has valid eligibility ids and prices up to its line cap
     assert.ok(qci.QCI_BY_PLAN[p.id], `segment plan ${p.id} has no QCI entry`);
   }
 });
+
+Then("the data includes at least {int} MVNO plans", function (min) {
+  const count = offers.PLANS.filter((p) => p.mvno).length;
+  assert.ok(count >= min, `only ${count} MVNO plans`);
+});
