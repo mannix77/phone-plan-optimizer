@@ -8,6 +8,6 @@
     "check-sources": "node scripts/data-pipeline/check-sources.mjs"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "^11.2.0"
+    "@cucumber/cucumber": "^13.2.1"
   }
 }
