@@ -46,8 +46,9 @@ const QCI_BY_PLAN = {
 
   // AT&T network: postpaid tiers carry priority-data allotments; Cricket mostly QCI 9
   "att-value": { value: 8, note: "Priority (QCI 8) for the plan's 5GB premium-data allotment, then deprioritized (QCI 9).", allotment: true },
-  "att-extra": { value: 8, note: "Priority (QCI 8) for the plan's 75GB premium-data allotment, then deprioritized (QCI 9).", allotment: true },
+  "att-extra": { value: 8, note: "Priority (QCI 8) for the plan's 100GB premium-data allotment, then deprioritized (QCI 9).", allotment: true },
   "att-premium": { value: 8, note: "Unlimited premium data at AT&T postpaid priority." },
+  "att-elite": { value: 8, note: "Unlimited premium data at AT&T postpaid priority, with Turbo prioritization on top." },
   "us-mobile-starter": { value: 9, note: "Starter tier is deprioritized; US Mobile's Premium tiers ride higher (QCI 8 on Verizon, QCI 7 on T-Mobile) — verify for your network choice." },
   "boost-global": { value: 9, note: "Priority on Boost's own network and roaming partners not published — assumed deprioritized; verify." },
   "total-starter": { value: 9, note: "Prepaid MVNO traffic on Verizon is deprioritized." },

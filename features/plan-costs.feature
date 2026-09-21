@@ -24,6 +24,23 @@ Feature: 24-month plan cost calculation
     When the scenarios are computed
     Then the "Verizon Unlimited Welcome" rows are flagged as estimated
 
+  Scenario: AT&T's published two-line prices are used and not estimated
+    Given 2 lines with no new devices
+    When the scenarios are computed
+    Then the "AT&T Premium 2.0" rows have a 24-month plan cost of 3840.00
+    And the "AT&T Premium 2.0" rows are not flagged as estimated
+    And the "AT&T Value 2.0" rows have a 24-month plan cost of 2160.00
+
+  Scenario: AT&T Elite 2.0 single-line pricing
+    Given 1 line with no new devices
+    When the scenarios are computed
+    Then the "AT&T Elite 2.0" rows have a 24-month plan cost of 2640.00
+
+  Scenario: AT&T Elite 2.0 four-line pricing
+    Given 4 lines with no new devices
+    When the scenarios are computed
+    Then the "AT&T Elite 2.0" rows have a 24-month plan cost of 7200.00
+
   Scenario: A price the source published is not flagged as estimated
     Given 4 lines with no new devices
     When the scenarios are computed

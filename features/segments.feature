@@ -51,10 +51,22 @@ Feature: Eligibility-segment pricing (55+, military, first responder, student)
     When the scenarios are computed
     Then the "Verizon Unlimited Welcome" rows have a 24-month plan cost of 2400.00
 
-  Scenario: AT&T's Signature discount takes 25% off the top unlimited tier
+  Scenario: AT&T's Appreciation discount takes 20% off the top unlimited tier
     Given the user qualifies for "healthcare" pricing
     When the scenarios are computed
-    Then the "AT&T Premium 2.0" rows have a 24-month plan cost of 1620.00
+    Then the "AT&T Premium 2.0" rows have a 24-month plan cost of 1728.00
+
+  Scenario: AT&T's Appreciation discount tiers down the lineup
+    Given the user qualifies for "military" pricing
+    When the scenarios are computed
+    Then the "AT&T Value 2.0" rows have a 24-month plan cost of 1080.00
+    And the "AT&T Extra 2.0" rows have a 24-month plan cost of 1428.00
+
+  Scenario: Students get AT&T's Signature discount on Premium only
+    Given the user qualifies for "student" pricing
+    When the scenarios are computed
+    Then the "AT&T Premium 2.0" rows have a 24-month plan cost of 1728.00
+    And the "AT&T Value 2.0" rows have a 24-month plan cost of 1200.00
 
   Scenario: 55+ plans replace discounts rather than stacking
     Given the user qualifies for "plus55" pricing
