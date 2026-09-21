@@ -456,8 +456,96 @@ const DEVICES = [
     mfrTradeIn: { older: 400, recent: 720 },
     source: "https://www.androidcentral.com/phones/samsung-galaxy/best-samsung-galaxy-s26-deals",
   },
+  {
+    id: "pixel10pro-256",
+    maker: "Google",
+    name: "Pixel 10 Pro (256GB)",
+    retail: 999,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
+    mfrFinancing: { months: 24, monthly: 41.63, apr: 0 },
+    mfrTradeIn: { older: 200, recent: 580 },
+    tradeInNote: "Google Store trade-in values estimated from published promos — verify.",
+    source: "https://us.smartprix.com/mobiles/google-pixel-10-pro-ppd180roywtv",
+  },
+  {
+    id: "pixel10proxl-256",
+    maker: "Google",
+    name: "Pixel 10 Pro XL (256GB)",
+    retail: 1099,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
+    mfrFinancing: { months: 24, monthly: 45.79, apr: 0 },
+    mfrTradeIn: { older: 200, recent: 580 },
+    tradeInNote: "Google Store trade-in values estimated from published promos — verify.",
+    source: "https://us.smartprix.com/mobiles/google-pixel-10-pro-xl-ppd1s6cuqf6u",
+  },
+  {
+    id: "pixel10a-128",
+    maker: "Google",
+    name: "Pixel 10a (128GB)",
+    retail: 499,
+    // Big-3 store availability not verified — sold unlocked; priced as a
+    // manufacturer purchase everywhere until a carrier listing is confirmed.
+    soldBy: [],
+    mfrFinancing: { months: 24, monthly: 20.79, apr: 0 },
+    mfrTradeIn: { older: 200, recent: 580 },
+    tradeInNote: "Google Store trade-in values estimated from published promos — verify.",
+    source: "https://www.androidcentral.com/phones/google/google-pixel-10a",
+  },
+  {
+    id: "zflip7-256",
+    maker: "Samsung",
+    name: "Galaxy Z Flip7 (256GB)",
+    retail: 1099,
+    // T-Mobile and AT&T listings confirmed; Verizon not verified.
+    soldBy: ["T-Mobile", "AT&T"],
+    mfrFinancing: { months: 24, monthly: 45.79, apr: 0 },
+    mfrTradeIn: { older: 400, recent: 720 },
+    source: "https://www.tomsguide.com/phones/samsung-phones/samsung-just-hiked-the-price-of-even-more-phones-and-tablets-including-galaxy-z-flip-7",
+  },
+  {
+    id: "s25fe-256",
+    maker: "Samsung",
+    name: "Galaxy S25 FE (256GB)",
+    retail: 749,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
+    mfrFinancing: { months: 24, monthly: 31.21, apr: 0 },
+    mfrTradeIn: { older: 400, recent: 720 },
+    source: "https://www.tomsguide.com/phones/samsung-phones/samsung-just-hiked-the-price-of-even-more-phones-and-tablets-including-galaxy-z-flip-7",
+  },
+  {
+    id: "a56-256",
+    maker: "Samsung",
+    name: "Galaxy A56 (256GB)",
+    retail: 425,
+    // Sold mainly unlocked in the US; big-3 store availability not verified.
+    soldBy: [],
+    mfrFinancing: { months: 24, monthly: 17.71, apr: 0 },
+    mfrTradeIn: { older: 400, recent: 720 },
+    source: "https://us.smartprix.com/mobiles/samsung-galaxy-z-flip-7-ppd1druu1t76",
+  },
 ];
 
+// Trade-in devices the user can name. `values` carries a manufacturer
+// program's PUBLISHED value for this model (keyed by the new device's
+// maker); where a program hasn't published one, the engine falls back to
+// the tier's typical value for that maker. carrierEligible: whether
+// carriers accept it toward promo credits (they rarely accept iPhone X
+// or older, and require working condition unless a promo says
+// otherwise). Refresh with the monthly data check.
+const TRADE_IN_DEVICES = [
+  { id: "iphone16", label: "iPhone 16", maker: "Apple", tier: "recent", carrierEligible: true, values: { Apple: 450 }, source: "https://macmyths.com/apple-iphone-17-pricing-u-s-cost-storage-financing-trade-in-and-carrier-deals/" },
+  { id: "iphone15promax", label: "iPhone 15 Pro Max", maker: "Apple", tier: "recent", carrierEligible: true, values: { Apple: 620 }, note: "Low end of the published $620–720 range.", source: "https://electronics.alibaba.com/buyingguides/iphone-15-trade-in-value-guide-2026" },
+  { id: "iphone15", label: "iPhone 15", maker: "Apple", tier: "recent", carrierEligible: true, source: "https://electronics.alibaba.com/buyingguides/iphone-15-trade-in-value-guide-2026" },
+  { id: "iphone14", label: "iPhone 14", maker: "Apple", tier: "older", carrierEligible: true, source: "https://www.bankmycell.com/blog/how-much-is-my-iphone-worth/" },
+  { id: "iphone13", label: "iPhone 13", maker: "Apple", tier: "older", carrierEligible: true, values: { Apple: 200 }, source: "https://macmyths.com/apple-iphone-17-pricing-u-s-cost-storage-financing-trade-in-and-carrier-deals/" },
+  { id: "iphone-x-or-older", label: "iPhone X or older", maker: "Apple", tier: "none", carrierEligible: false, note: "Carriers rarely accept iPhone X or older.", source: "https://www.shopback.com/blog/electronics/iphone-17-verizon-vs-att-vs-best-buy-trade-in-2026" },
+  { id: "galaxy-s24", label: "Galaxy S24", maker: "Samsung", tier: "recent", carrierEligible: true, values: { Samsung: 720 }, note: "Top of Samsung's published range — verify.", source: "https://www.androidcentral.com/phones/samsung-galaxy/best-samsung-galaxy-s26-deals" },
+  { id: "galaxy-s23", label: "Galaxy S23", maker: "Samsung", tier: "older", carrierEligible: true, values: { Apple: 125 }, source: "https://www.macrumors.com/2026/05/27/apple-updates-trade-in-values-may-2026/" },
+  { id: "galaxy-s22", label: "Galaxy S22", maker: "Samsung", tier: "older", carrierEligible: true, note: "Accepted in any condition by AT&T's Galaxy promo.", source: "https://www.androidcentral.com/phones/samsung-galaxy/best-samsung-galaxy-s26-deals" },
+  { id: "pixel9", label: "Pixel 9", maker: "Google", tier: "recent", carrierEligible: true, source: "https://store.google.com/magazine/trade_in?hl=en-US" },
+  { id: "pixel7", label: "Pixel 7", maker: "Google", tier: "older", carrierEligible: true, source: "https://store.google.com/magazine/trade_in?hl=en-US" },
+  { id: "broken-or-ancient", label: "Cracked / not working / very old", maker: "", tier: "none", carrierEligible: false, note: "Promos need good, working condition unless stated otherwise (minimum ~$95 trade value).", source: "https://www.shopback.com/blog/electronics/iphone-17-verizon-vs-att-vs-best-buy-trade-in-2026" },
+];
 // Carrier device promotions. Structure every carrier promo shares:
 // full retail is financed over `financeMonths`, and the credit is paid
 // back as equal monthly bill credits over `creditMonths`. Leaving early
@@ -509,19 +597,7 @@ const CARRIER_PROMOS = [
 // three carriers for these devices.]
 const CARRIER_FINANCE_MONTHS = 36;
 
-// Average combined federal/state/local wireless taxes, fees, and
-// surcharges as a share of the service bill (record high in 2025).
-// Used by the "estimate taxes for me" option; never applied to plans
-// whose price already includes taxes. State rates vary widely — from
-// under 17% in the lowest-taxed states to over 38% (Illinois).
-const WIRELESS_TAX_RATE = {
-  rate: 0.276,
-  label: "27.6%",
-  source: "https://taxfoundation.org/data/all/state/wireless-taxes-cell-phone-tax-rates-by-state-2025/",
-  retrieved: "2026-09-21",
-};
-
 // Node export for the BDD suite (features/); ignored in the browser.
 if (typeof module !== "undefined") {
-  module.exports = { DATA_RETRIEVED, PLANS, DEVICES, CARRIER_PROMOS, CARRIER_FINANCE_MONTHS, WIRELESS_TAX_RATE };
+  module.exports = { DATA_RETRIEVED, PLANS, DEVICES, CARRIER_PROMOS, CARRIER_FINANCE_MONTHS, TRADE_IN_DEVICES };
 }

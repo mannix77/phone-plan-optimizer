@@ -48,20 +48,35 @@ const money = (n) =>
 const money2 = (n) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
 
-function findPromo(promos, plan, device, tradeIn) {
+function findPromo(promos, plan, device, promoEligible) {
   return promos.find(
     (p) =>
       p.carrier === plan.carrier &&
       p.deviceIds.includes(device.id) &&
       TIER_RANK[plan.tier] >= TIER_RANK[p.requiresTier] &&
-      (!p.requiresTradeIn || tradeIn !== "none")
+      (!p.requiresTradeIn || promoEligible)
   );
+}
+
+// Resolve what the user is trading in: a listed device (its published
+// value for the new device's maker, or its tier's typical value), a
+// generic tier, or nothing. promoEligible says whether carriers accept
+// it toward promo credits.
+function resolveTradeIn(data, tradeIn, maker) {
+  if (!tradeIn || tradeIn === "none") return { value: 0, promoEligible: false };
+  if (tradeIn === "older" || tradeIn === "recent") return { value: null, tier: tradeIn, promoEligible: true };
+  const t = (data.TRADE_IN_DEVICES || []).find((x) => x.id === tradeIn);
+  if (!t) return { value: 0, promoEligible: false };
+  if (t.tier === "none") return { value: 0, promoEligible: false };
+  const value = t.values && t.values[maker] != null ? t.values[maker] : null;
+  return { value, tier: t.tier, promoEligible: t.carrierEligible !== false };
 }
 
 // Cost of one device line under one purchase path. Returns
 // { upfront, paid24, owedAt24, creditsApplied, notes[], promo? }.
 function lineCost(data, pathKey, plan, device, tradeIn, lineNo) {
-  const mfrTrade = tradeIn === "none" ? 0 : device.mfrTradeIn[tradeIn];
+  const resolved = resolveTradeIn(data, tradeIn, device.maker);
+  const mfrTrade = resolved.value != null ? resolved.value : resolved.tier ? device.mfrTradeIn[resolved.tier] : 0;
   const financed = Math.max(0, device.retail - mfrTrade);
   const mfrNotes = mfrTrade
     ? [`Line ${lineNo}: ${money(mfrTrade)} ${device.maker} trade-in credit applied.`]
@@ -100,7 +115,7 @@ function lineCost(data, pathKey, plan, device, tradeIn, lineNo) {
       ],
     };
   }
-  const promo = findPromo(data.CARRIER_PROMOS, plan, device, tradeIn);
+  const promo = findPromo(data.CARRIER_PROMOS, plan, device, resolved.promoEligible);
   const financeMonths = promo ? promo.financeMonths : data.CARRIER_FINANCE_MONTHS;
   const monthly = device.retail / financeMonths;
   let paid24 = Math.min(24, financeMonths) * monthly;
@@ -129,20 +144,15 @@ function lineCost(data, pathKey, plan, device, tradeIn, lineNo) {
   };
 }
 
-// Plan cost over 24 months for a line count, honoring intro pricing and
-// the taxes choice: { mode: "none" } compares pre-tax prices,
-// { mode: "custom", perLine } adds a user-known $/line/mo, and
-// { mode: "estimate", rate } applies the published average wireless
-// tax rate. Plans whose price already includes taxes are never inflated.
-function planCost24(plan, lines, taxes) {
+// Plan cost over 24 months for a line count, honoring intro pricing.
+// Taxes and fees are NOT included anywhere in the calculations — they
+// vary by state and locality, and the UI says so; plans whose price
+// includes taxes (taxesIncluded) note that themselves.
+function planCost24(plan, lines) {
   const normal = plan.perLine[lines].price;
   const introMonths = plan.intro ? plan.intro.months : 0;
   const introPrice = plan.intro ? plan.intro.perLine : 0;
-  const planOnly = introMonths * introPrice * lines + (24 - introMonths) * normal * lines;
-  if (plan.taxesIncluded || !taxes || taxes.mode === "none") return planOnly;
-  if (taxes.mode === "custom") return planOnly + (taxes.perLine || 0) * lines * 24;
-  if (taxes.mode === "estimate") return planOnly * (1 + (taxes.rate || 0));
-  return planOnly;
+  return introMonths * introPrice * lines + (24 - introMonths) * normal * lines;
 }
 
 function computeScenarios(data, input) {
@@ -161,7 +171,7 @@ function computeScenarios(data, input) {
     }
     const line = plan.perLine[input.lines];
     if (!line) continue;
-    const plan24 = planCost24(plan, input.lines, input.taxes);
+    const plan24 = planCost24(plan, input.lines);
     const planMonthly = plan24 / 24;
 
     const leaseAvailable =
@@ -352,5 +362,5 @@ function bestPremium(classified) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { TIER_RANK, money, money2, findPromo, matchesNeeds, lineCost, planCost24, computeScenarios, featureScore, classifyResults, bestPremium, savingsVsCurrent, suggestTradeIn };
+  module.exports = { TIER_RANK, money, money2, findPromo, resolveTradeIn, matchesNeeds, lineCost, planCost24, computeScenarios, featureScore, classifyResults, bestPremium, savingsVsCurrent, suggestTradeIn };
 }

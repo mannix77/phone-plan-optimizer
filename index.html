@@ -149,13 +149,11 @@
           <label class="check"><input class="path-option" type="checkbox" value="byod"> Also show plan-only (keep current phones)</label>
         </div>
         <label class="check"><input id="in-mvnos" type="checkbox"> Include prepaid / MVNOs (cheaper, lower network priority)</label>
-        <div class="wiz-field" style="margin-top: 14px;">Taxes &amp; fees on the bill
-          <div class="path-list">
-            <label class="check"><input type="radio" name="taxmode" value="estimate" checked> Estimate them for me — the national average is <span id="tax-rate-label"></span> of the plan price (plans that already include taxes aren't inflated)</label>
-            <label class="check"><input type="radio" name="taxmode" value="custom"> I know my amount:&nbsp;<input id="in-fees" type="number" min="0" step="0.5" value="0" class="inline-num" aria-label="Taxes and fees per line per month">&nbsp;$/line/mo</label>
-            <label class="check"><input type="radio" name="taxmode" value="none"> Skip — compare pre-tax prices</label>
-          </div>
-          <div class="tax-note">Your state matters: combined rates run from under 17% to over 38% (Illinois). Source: <a href="https://taxfoundation.org/data/all/state/wireless-taxes-cell-phone-tax-rates-by-state-2025/" target="_blank" rel="noopener">Tax Foundation, 2025</a>.</div>
+        <div class="banner" style="margin-top: 14px;">
+          Taxes &amp; fees are <strong>not included</strong> in these calculations —
+          they vary by state and locality (from under 17% to over 38% of a
+          wireless bill per the <a href="https://taxfoundation.org/data/all/state/wireless-taxes-cell-phone-tax-rates-by-state-2025/" target="_blank" rel="noopener">Tax Foundation</a>),
+          so validate them for your area. Plans whose price includes taxes say so in their math.
         </div>
       </section>
 

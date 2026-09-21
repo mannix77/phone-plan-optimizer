@@ -36,7 +36,7 @@ const DATA_USE_LABEL = {
   heavy: "Heavy data (priority)",
   maximum: "Maximum data (always priority)",
 };
-const TRADE_LABEL = { none: "no trade-in", older: "older-flagship trade-ins", recent: "recent-flagship trade-ins" };
+
 const AGE_LABEL = { under2: "under 2 years old", twoToFour: "2–4 years old", overFour: "over 4 years old", none: "unknown age" };
 
 function summaries() {
@@ -61,20 +61,13 @@ function summaries() {
     s.devices = "No new devices — keeping current phones";
   } else {
     const names = [...new Set(withDevice.map((c) => deviceById(c.deviceId).name))];
-    s.devices = `${withDevice.length} × ${names.join(" / ")} · ${TRADE_LABEL[withDevice[0].tradeIn]}`;
+    s.devices = `${withDevice.length} × ${names.join(" / ")} · trade-in: ${tradeLabel(withDevice[0].tradeIn)}`;
   }
   const paths = [...document.querySelectorAll(".path-option:checked")].map((el) => el.value);
-  const taxes = readTaxes();
-  const taxText =
-    taxes.mode === "estimate"
-      ? ` · taxes estimated at ${WIRELESS_TAX_RATE.label}`
-      : taxes.mode === "custom"
-        ? ` · +${money2(taxes.perLine)}/line/mo taxes`
-        : " · pre-tax prices";
   s.paying =
     (paths.length === 0 ? "Plan-only comparison" : `Comparing: ${paths.join(", ")}`) +
     ($("in-mvnos").checked ? " · MVNOs included" : "") +
-    taxText;
+    " · taxes not included";
   return s;
 }
 
@@ -187,15 +180,26 @@ function deviceOptions(selected) {
   return `<option value="none" ${selected === "none" ? "selected" : ""}>No new device (BYOD)</option>` + opts.join("");
 }
 
+const GENERIC_TRADE_LABEL = {
+  none: "No trade-in",
+  recent: "Other recent flagship (~last year)",
+  older: "Other older flagship (~3 yrs)",
+};
+
+function tradeLabel(id) {
+  if (GENERIC_TRADE_LABEL[id]) return GENERIC_TRADE_LABEL[id];
+  const t = TRADE_IN_DEVICES.find((x) => x.id === id);
+  return t ? t.label : id;
+}
+
 function tradeInOptions(selected) {
-  return ["none", "older", "recent"]
-    .map(
-      (v) =>
-        `<option value="${v}" ${v === selected ? "selected" : ""}>` +
-        { none: "No trade-in", older: "Older flagship (~3 yrs)", recent: "Recent flagship (last year)" }[v] +
-        "</option>"
-    )
-    .join("");
+  const opt = (v, label) => `<option value="${v}" ${v === selected ? "selected" : ""}>${label}</option>`;
+  return (
+    opt("none", GENERIC_TRADE_LABEL.none) +
+    TRADE_IN_DEVICES.map((t) => opt(t.id, t.label)).join("") +
+    opt("recent", GENERIC_TRADE_LABEL.recent) +
+    opt("older", GENERIC_TRADE_LABEL.older)
+  );
 }
 
 function renderDeviceCards() {
@@ -306,15 +310,7 @@ function readInputs() {
       international: $("in-intl").checked,
     },
     includeMvnos: $("in-mvnos").checked,
-    taxes: readTaxes(),
   };
-}
-
-function readTaxes() {
-  const mode = checkedValue("taxmode") || "estimate";
-  if (mode === "custom") return { mode, perLine: Number($("in-fees").value) || 0 };
-  if (mode === "estimate") return { mode, rate: WIRELESS_TAX_RATE.rate };
-  return { mode: "none" };
 }
 
 // ------------------------------------------------------------ Results
@@ -371,9 +367,11 @@ function optionDetail(o, input) {
       (o.plan.intro ? ` (first ${o.plan.intro.months} months at ${money2(o.plan.intro.perLine)}/line)` : "") +
       ` ≈ ${money2(o.planMonthly)}/mo → ${money(o.plan24)} over 24 months.`
   );
-  if (!o.plan.taxesIncluded && input.taxes && input.taxes.mode === "estimate") {
-    d.push(`Includes estimated taxes & fees at ${WIRELESS_TAX_RATE.label} — the national average; your state runs from under 17% to over 38%.`);
-  }
+  d.push(
+    o.plan.taxesIncluded
+      ? "This plan's price includes taxes and fees."
+      : "Taxes & fees are not included — they vary by state and locality; validate them for your area."
+  );
   if (o.plan.notes) d.push(o.plan.notes);
   if (o.qci) {
     d.push(`Network priority: QCI ${o.qci.value}${o.plan.mvno ? ` on the ${o.plan.network} network` : ""}. ${o.qci.note}`);
@@ -562,7 +560,7 @@ $("plan-defs-body").innerHTML = PLANS.map((p) => {
 }).join("");
 
 renderDeviceCards();
+$("in-tradein").innerHTML = tradeInOptions("older");
 $("qci-legend").textContent = `* ${QCI_EXPLANATION}`;
 $("data-date").textContent = DATA_RETRIEVED;
-$("tax-rate-label").textContent = WIRELESS_TAX_RATE.label;
 showStep();

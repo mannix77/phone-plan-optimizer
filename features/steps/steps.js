@@ -28,6 +28,7 @@ Before(function () {
     DEVICES: clone(offers.DEVICES),
     CARRIER_PROMOS: clone(offers.CARRIER_PROMOS),
     CARRIER_FINANCE_MONTHS: offers.CARRIER_FINANCE_MONTHS,
+    TRADE_IN_DEVICES: clone(offers.TRADE_IN_DEVICES),
     QCI_BY_PLAN: qci.QCI_BY_PLAN,
   };
   this.input = {
@@ -35,7 +36,6 @@ Before(function () {
     lineConfigs: [{ deviceId: "none", tradeIn: "none" }],
     paths: new Set(["carrier", "mfr", "outright", "lease"]),
     includeMvnos: false,
-    taxes: { mode: "none" },
   };
 });
 
@@ -70,13 +70,7 @@ Given("MVNOs are included", function () {
   this.input.includeMvnos = true;
 });
 
-Given("an estimated taxes and fees of {float} per line per month", function (fees) {
-  this.input.taxes = { mode: "custom", perLine: fees };
-});
 
-Given("taxes are estimated at the national average rate", function () {
-  this.input.taxes = { mode: "estimate", rate: offers.WIRELESS_TAX_RATE.rate };
-});
 
 Given("the {string} is not sold by {string}", function (deviceName, carrier) {
   const d = this.data.DEVICES.find((d) => d.name === deviceName);
@@ -422,4 +416,16 @@ Then("the best-option gains include {string}", function (gain) {
 
 Then("the best option is the cheapest option", function () {
   assert.strictEqual(this.classified.best, this.classified.cheapest);
+});
+
+// --------------------------------------------------- Trade-in devices
+
+Then("every trade-in device has a valid tier, eligibility flag, and an https source", function () {
+  assert.ok(offers.TRADE_IN_DEVICES.length >= 8, `only ${offers.TRADE_IN_DEVICES ? offers.TRADE_IN_DEVICES.length : 0} trade-in devices`);
+  for (const t of offers.TRADE_IN_DEVICES) {
+    assert.ok(["recent", "older", "none"].includes(t.tier), `trade-in ${t.id} has invalid tier ${t.tier}`);
+    assert.ok(typeof t.carrierEligible === "boolean", `trade-in ${t.id} missing carrierEligible`);
+    assert.ok(typeof t.label === "string" && t.label.length > 0, `trade-in ${t.id} missing label`);
+    assert.ok(typeof t.source === "string" && t.source.startsWith("https://"), `trade-in ${t.id} lacks an https source`);
+  }
 });
