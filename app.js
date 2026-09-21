@@ -49,7 +49,8 @@ function summaries() {
     `${lines} line(s)${carrier ? ` on ${carrier}` : ""}` +
     (monthly ? ` · ${money2(monthly)}/mo service` : "") +
     (balance ? ` · ${money(balance)} owed on phones` : "") +
-    ` · phones ${AGE_LABEL[$("in-phone-age").value]}`;
+    ` · phones ${AGE_LABEL[$("in-phone-age").value]}` +
+    ($("in-segment").value !== "none" ? ` · ${$("in-segment").selectedOptions[0].textContent} pricing` : "");
   const hotspot = Number(checkedValue("hotspot"));
   s.needs =
     `${DATA_USE_LABEL[checkedValue("datause")]}` +
@@ -310,6 +311,7 @@ function readInputs() {
       international: $("in-intl").checked,
     },
     includeMvnos: $("in-mvnos").checked,
+    segment: $("in-segment").value,
   };
 }
 
@@ -458,7 +460,7 @@ function verdictText(input, deviceLines) {
 function showResults() {
   const input = readInputs();
   const result = computeScenarios(ENGINE_DATA, input);
-  const { deviceLines, excludedByNeeds } = result;
+  const { deviceLines, excludedByNeeds, excludedByEligibility } = result;
 
   availabilityNotice(deviceLines, input);
   const needsNote = $("needs-note");
@@ -471,6 +473,15 @@ function showResults() {
     needsNote.hidden = true;
   }
 
+  const eligNote = $("eligibility-note");
+  if (excludedByEligibility.length) {
+    eligNote.hidden = false;
+    eligNote.innerHTML = excludedByEligibility
+      .map((p) => `<strong>${p.carrier} ${p.name}</strong> allows at most ${p.segment.maxLines} lines, so it's set aside for this account.`)
+      .join("<br>");
+  } else {
+    eligNote.hidden = true;
+  }
   const current = {
     monthly: Number($("in-current-monthly").value) || 0,
     balance: Number($("in-current-balance").value) || 0,
