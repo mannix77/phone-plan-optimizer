@@ -34,3 +34,23 @@ Feature: 24-month plan cost calculation
     Given 4 lines with no new devices
     When the scenarios are computed
     Then the "Verizon Unlimited Welcome" rows are not flagged as estimated
+
+  Scenario: The estimated tax rate applies to plans that don't include taxes
+    Given 1 line with no new devices
+    And taxes are estimated at the national average rate
+    When the scenarios are computed
+    Then the "Verizon Unlimited Ultimate" rows have a 24-month plan cost of 2756.16
+
+  Scenario: Tax estimates never inflate plans whose price already includes taxes
+    Given 1 line with no new devices
+    And MVNOs are included
+    And taxes are estimated at the national average rate
+    When the scenarios are computed
+    Then the "Visible Visible Unlimited" rows have a 24-month plan cost of 600.00
+
+  Scenario: A custom tax amount also skips taxes-included plans
+    Given 1 line with no new devices
+    And MVNOs are included
+    And an estimated taxes and fees of 5.00 per line per month
+    When the scenarios are computed
+    Then the "Visible Visible Unlimited" rows have a 24-month plan cost of 600.00

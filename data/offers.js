@@ -509,7 +509,19 @@ const CARRIER_PROMOS = [
 // three carriers for these devices.]
 const CARRIER_FINANCE_MONTHS = 36;
 
+// Average combined federal/state/local wireless taxes, fees, and
+// surcharges as a share of the service bill (record high in 2025).
+// Used by the "estimate taxes for me" option; never applied to plans
+// whose price already includes taxes. State rates vary widely — from
+// under 17% in the lowest-taxed states to over 38% (Illinois).
+const WIRELESS_TAX_RATE = {
+  rate: 0.276,
+  label: "27.6%",
+  source: "https://taxfoundation.org/data/all/state/wireless-taxes-cell-phone-tax-rates-by-state-2025/",
+  retrieved: "2026-09-21",
+};
+
 // Node export for the BDD suite (features/); ignored in the browser.
 if (typeof module !== "undefined") {
-  module.exports = { DATA_RETRIEVED, PLANS, DEVICES, CARRIER_PROMOS, CARRIER_FINANCE_MONTHS };
+  module.exports = { DATA_RETRIEVED, PLANS, DEVICES, CARRIER_PROMOS, CARRIER_FINANCE_MONTHS, WIRELESS_TAX_RATE };
 }

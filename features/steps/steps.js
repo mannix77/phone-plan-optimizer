@@ -35,7 +35,7 @@ Before(function () {
     lineConfigs: [{ deviceId: "none", tradeIn: "none" }],
     paths: new Set(["carrier", "mfr", "outright", "lease"]),
     includeMvnos: false,
-    feesPerLine: 0,
+    taxes: { mode: "none" },
   };
 });
 
@@ -71,7 +71,11 @@ Given("MVNOs are included", function () {
 });
 
 Given("an estimated taxes and fees of {float} per line per month", function (fees) {
-  this.input.feesPerLine = fees;
+  this.input.taxes = { mode: "custom", perLine: fees };
+});
+
+Given("taxes are estimated at the national average rate", function () {
+  this.input.taxes = { mode: "estimate", rate: offers.WIRELESS_TAX_RATE.rate };
 });
 
 Given("the {string} is not sold by {string}", function (deviceName, carrier) {

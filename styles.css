@@ -612,3 +612,14 @@ footer a { color: var(--accent); }
   .choice-grid, #device-cards { grid-template-columns: 1fr; }
 }
 #stepper li.active { background: none; color: var(--accent); border: none; }
+.inline-num {
+  font: inherit;
+  width: 76px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+.tax-note { font-size: 0.78rem; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); margin-top: 6px; }
+.tax-note a { color: var(--accent); }

@@ -129,13 +129,20 @@ function lineCost(data, pathKey, plan, device, tradeIn, lineNo) {
   };
 }
 
-// Plan cost over 24 months for a line count, honoring intro pricing.
-function planCost24(plan, lines, feesPerLine) {
+// Plan cost over 24 months for a line count, honoring intro pricing and
+// the taxes choice: { mode: "none" } compares pre-tax prices,
+// { mode: "custom", perLine } adds a user-known $/line/mo, and
+// { mode: "estimate", rate } applies the published average wireless
+// tax rate. Plans whose price already includes taxes are never inflated.
+function planCost24(plan, lines, taxes) {
   const normal = plan.perLine[lines].price;
   const introMonths = plan.intro ? plan.intro.months : 0;
   const introPrice = plan.intro ? plan.intro.perLine : 0;
   const planOnly = introMonths * introPrice * lines + (24 - introMonths) * normal * lines;
-  return planOnly + feesPerLine * lines * 24;
+  if (plan.taxesIncluded || !taxes || taxes.mode === "none") return planOnly;
+  if (taxes.mode === "custom") return planOnly + (taxes.perLine || 0) * lines * 24;
+  if (taxes.mode === "estimate") return planOnly * (1 + (taxes.rate || 0));
+  return planOnly;
 }
 
 function computeScenarios(data, input) {
@@ -154,7 +161,7 @@ function computeScenarios(data, input) {
     }
     const line = plan.perLine[input.lines];
     if (!line) continue;
-    const plan24 = planCost24(plan, input.lines, input.feesPerLine);
+    const plan24 = planCost24(plan, input.lines, input.taxes);
     const planMonthly = plan24 / 24;
 
     const leaseAvailable =
