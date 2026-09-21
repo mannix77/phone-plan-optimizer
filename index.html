@@ -6,58 +6,77 @@
   <header>
     <h1>Phone Plan Optimizer</h1>
     <p class="subtitle">
-      Compare the true 24-month cost of a plan + device across carriers —
-      including carrier financing with promo credits, manufacturer 0%
-      financing, and buying the phone outright.
+      Answer four quick questions and get a recommendation: the plan you
+      need, the carrier that offers it best, and the smartest way to get
+      your phone — by true 24-month cost.
     </p>
   </header>
 
   <div class="banner">
     Offer data was collected from public sources on <strong id="data-date"></strong>
-    and covers a sample of major US offers — it is not exhaustive, and
-    carrier pricing changes often. Verify any result on the carrier's site before buying.
+    and covers a sample of major US offers — verify any result on the
+    carrier's site before buying.
   </div>
   <div class="banner" id="stale-note" hidden></div>
 
-  <form id="inputs" onsubmit="return false">
-    <div class="controls-grid">
-      <label>Lines
-        <select id="in-lines">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4" selected>4</option>
-          <option value="5">5</option>
-        </select>
-      </label>
-      <label>Est. taxes &amp; fees ($/line/mo)
-        <input id="in-fees" type="number" min="0" step="0.5" value="0">
-      </label>
-      <label class="check"><input id="in-mvnos" type="checkbox"> Include MVNOs / prepaid</label>
-      <label class="check"><input id="in-customlines" type="checkbox"> Customize each line</label>
-    </div>
+  <form id="wizard" onsubmit="return false">
+    <ol id="stepper">
+      <li data-step="1">Today</li>
+      <li data-step="2">Data needs</li>
+      <li data-step="3">Devices</li>
+      <li data-step="4">Paying</li>
+    </ol>
 
-    <div class="controls-grid" id="uniform-inputs">
-      <label>New device
-        <select id="in-device"></select>
-      </label>
-      <label>How many need the new device
-        <input id="in-newdevices" type="number" min="0" max="5" value="2">
-      </label>
-      <label>Trade-in per new device
-        <select id="in-tradein">
-          <option value="none">No trade-in</option>
-          <option value="older" selected>Older flagship (~3 yrs)</option>
-          <option value="recent">Recent flagship (last year)</option>
-        </select>
-      </label>
-    </div>
+    <section class="step" data-step="1">
+      <h2>Where are you today?</h2>
+      <p class="step-help">Your current setup is the baseline every option gets compared against — and it lets the next questions answer themselves.</p>
+      <div class="controls-grid">
+        <label class="wiz-field">Lines on your account
+          <select id="in-lines">
+            <option value="1">1 line</option>
+            <option value="2">2 lines</option>
+            <option value="3">3 lines</option>
+            <option value="4" selected>4 lines</option>
+            <option value="5">5 lines</option>
+          </select>
+        </label>
+        <label class="wiz-field">Current carrier
+          <select id="in-current-carrier">
+            <option value="" selected>Prefer not to say / other</option>
+            <option>Verizon</option>
+            <option>T-Mobile</option>
+            <option>AT&amp;T</option>
+            <option>Visible</option>
+            <option>Mint Mobile</option>
+            <option>Metro</option>
+            <option>Cricket</option>
+          </select>
+        </label>
+        <label class="wiz-field">Service-only cost today ($/mo, whole account)
+          <input id="in-current-monthly" type="number" min="0" step="1" placeholder="e.g. 120">
+        </label>
+        <label class="wiz-field">Still owed on current phones ($ total, 0 if none)
+          <input id="in-current-balance" type="number" min="0" step="10" value="0">
+        </label>
+        <label class="wiz-field">How old are your current phones, mostly?
+          <select id="in-phone-age">
+            <option value="under2">Under 2 years</option>
+            <option value="twoToFour" selected>2–4 years</option>
+            <option value="overFour">Over 4 years</option>
+            <option value="none">No phones / not sure</option>
+          </select>
+        </label>
+      </div>
+    </section>
 
-    <div id="line-editor" hidden></div>
-
-    <fieldset class="path-picker">
-      <legend>Your data needs (all plans include unlimited calls &amp; texts)</legend>
-      <label>Fast data per line, monthly
+    <section class="step" data-step="2" hidden>
+      <h2>How do you use data?</h2>
+      <p class="step-help">
+        Every plan includes unlimited calls and texts, so what actually
+        separates plans is priority data (how fast you stay when towers
+        are busy), hotspot data, and international use.
+      </p>
+      <label class="wiz-field">Fast data per line, monthly
         <select id="in-datause">
           <option value="light" selected>Light — under 5GB, OK if slowed when towers are busy</option>
           <option value="moderate">Moderate — 5–30GB at full priority</option>
@@ -65,7 +84,7 @@
           <option value="maximum">Maximum — always-unlimited priority data</option>
         </select>
       </label>
-      <label>High-speed hotspot needed
+      <label class="wiz-field">High-speed hotspot needed
         <select id="in-hotspot">
           <option value="0" selected>None</option>
           <option value="15">Up to 15GB</option>
@@ -74,72 +93,89 @@
         </select>
       </label>
       <label class="check"><input id="in-intl" type="checkbox"> I use my phone internationally</label>
-    </fieldset>
+    </section>
 
-    <fieldset class="path-picker">
-      <legend>Device options to compare</legend>
-      <label class="check"><input class="path-option" type="checkbox" value="carrier" checked> Finance through carrier</label>
-      <label class="check"><input class="path-option" type="checkbox" value="mfr" checked> Finance through manufacturer</label>
-      <label class="check"><input class="path-option" type="checkbox" value="outright" checked> Buy outright</label>
-      <label class="check"><input class="path-option" type="checkbox" value="lease" checked> Lease / upgrade program</label>
-      <label class="check"><input class="path-option" type="checkbox" value="byod"> Bring your own (plan only)</label>
-    </fieldset>
+    <section class="step" data-step="3" hidden>
+      <h2>Does anyone need a new phone?</h2>
+      <p class="step-help">Trade-ins matter — they unlock the biggest carrier promos and cut manufacturer prices.</p>
+      <div class="controls-grid" id="uniform-inputs">
+        <label class="wiz-field">New device
+          <select id="in-device"></select>
+        </label>
+        <label class="wiz-field">How many lines get it
+          <input id="in-newdevices" type="number" min="0" max="5" value="2">
+        </label>
+        <label class="wiz-field">Trade-in per new device
+          <select id="in-tradein">
+            <option value="none">No trade-in</option>
+            <option value="older" selected>Older flagship (~3 yrs)</option>
+            <option value="recent">Recent flagship (last year)</option>
+          </select>
+        </label>
+      </div>
+      <label class="check"><input id="in-customlines" type="checkbox"> Pick a different device per line</label>
+      <div id="line-editor" hidden></div>
+    </section>
+
+    <section class="step" data-step="4" hidden>
+      <h2>How would you consider paying for the phones?</h2>
+      <p class="step-help">Leave them all checked to let the comparison decide — it ranks every path by true 24-month cost.</p>
+      <div class="path-list">
+        <label class="check"><input class="path-option" type="checkbox" value="carrier" checked> Finance through the carrier (promo credits, 36-month terms)</label>
+        <label class="check"><input class="path-option" type="checkbox" value="mfr" checked> Finance through the manufacturer (0% for 24 months)</label>
+        <label class="check"><input class="path-option" type="checkbox" value="outright" checked> Buy outright</label>
+        <label class="check"><input class="path-option" type="checkbox" value="lease" checked> Lease / upgrade program</label>
+        <label class="check"><input class="path-option" type="checkbox" value="byod"> Also show plan-only (keep current phones)</label>
+      </div>
+      <div class="controls-grid">
+        <label class="check"><input id="in-mvnos" type="checkbox"> Include prepaid / MVNOs (cheaper, lower network priority)</label>
+        <label class="wiz-field">Est. taxes &amp; fees ($/line/mo)
+          <input id="in-fees" type="number" min="0" step="0.5" value="0">
+        </label>
+      </div>
+    </section>
+
+    <div class="wiz-nav">
+      <button type="button" id="btn-back" disabled>Back</button>
+      <button type="button" id="btn-next" class="primary">Next</button>
+    </div>
   </form>
 
-  <div class="banner" id="availability-note" hidden></div>
-  <div class="banner" id="needs-note" hidden></div>
+  <section id="results" hidden>
+    <button type="button" id="btn-edit">&larr; Adjust my answers</button>
+    <div class="banner" id="availability-note" hidden></div>
+    <div class="banner" id="needs-note" hidden></div>
+    <div id="hero-cards"></div>
+    <h2 class="ranked-title" id="ranked-title"></h2>
+    <div id="ranked-list"></div>
+    <div class="banner" id="estimate-note" hidden>
+      * This option's multi-line price was not published by the source and is
+      an estimate — check the carrier's site.
+    </div>
 
-  <div id="best-pick"></div>
+    <details class="plan-defs">
+      <summary>Plan definitions used by this recommendation (collected <span id="defs-date"></span>)</summary>
+      <div id="plan-defs-body"></div>
+      <p class="defs-note">
+        Plan types change infrequently; a weekly scheduled check opens a
+        reminder issue to verify them. To update, edit the <code>features</code>
+        blocks in <code>data/offers.js</code> — values marked * were not stated
+        directly by the source.
+      </p>
+    </details>
 
-  <div class="banner" id="estimate-note" hidden>
-    * Multi-line prices marked with an asterisk were not published at this line
-    count by the source and are estimates — check the carrier's site.
-  </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Plan</th>
-          <th>Device purchase path</th>
-          <th class="num">Plan, 24 mo</th>
-          <th class="num">Devices, 24 mo</th>
-          <th class="num">Due upfront</th>
-          <th class="num">Owed at mo 24</th>
-          <th class="num">Paid, 24 mo</th>
-          <th class="num">True cost, 24 mo</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="results-body"></tbody>
-    </table>
-  </div>
-
-  <details class="plan-defs">
-    <summary>Plan definitions used by the needs assessment (collected <span id="defs-date"></span>)</summary>
-    <div id="plan-defs-body"></div>
-    <p class="defs-note">
-      Plan types change infrequently; a weekly scheduled check opens a
-      reminder issue to verify them. To update, edit the <code>features</code>
-      blocks in <code>data/offers.js</code> — values marked * were not stated
-      directly by the source.
-    </p>
-  </details>
-
-  <footer>
-    <p id="qci-legend" hidden></p>
-    <p>
-      Rows are ranked by true 24-month cost: everything paid in months 1–24
-      plus the device balance still owed at month 24 — so financing that
-      stretches past 24 months isn't artificially cheap. Totals are what you pay in months 1–24. Carrier financing usually runs 36
-      months, so "Owed at mo 24" is the device balance that remains — leaving a
-      carrier before the term ends makes it due and forfeits remaining promo
-      credits. Plan prices assume autopay; taxes and fees are extra unless the
-      plan says otherwise or you add an estimate above. Manufacturer trade-in
-      values use the maker's published ranges and depend on your device's
-      condition.
-    </p>
-  </footer>
+    <footer>
+      <p id="qci-legend" hidden></p>
+      <p>
+        True 24-month cost = everything paid in months 1–24 plus any device
+        balance still owed at month 24, so financing that stretches past 24
+        months isn't artificially cheap. Plan prices assume autopay; taxes and
+        fees are extra unless the option says otherwise or you added an
+        estimate. Manufacturer trade-in values use the maker's published
+        ranges and depend on your device's condition.
+      </p>
+    </footer>
+  </section>
 </div>
 
 <script src="data/offers.js"></script>

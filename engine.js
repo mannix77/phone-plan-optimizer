@@ -228,6 +228,100 @@ function computeScenarios(data, input) {
   return { rows, deviceLines, excludedByNeeds };
 }
 
+// ------------------------------------------------ Result classification
+
+// How much plan a plan is: priority data (unlimited 2, ≥30GB 1),
+// high-speed hotspot (≥100GB 2, ≥30GB 1), international (1). Used only
+// to pick the "best option" — the most plan for the money, tie broken
+// by lower true cost.
+function featureScore(plan) {
+  const f = plan.features || {};
+  const premium = f.premiumData === "unlimited" ? Infinity : f.premiumData || 0;
+  let score = 0;
+  score += premium === Infinity ? 2 : premium >= 30 ? 1 : 0;
+  score += (f.hotspotGB || 0) >= 100 ? 2 : (f.hotspotGB || 0) >= 30 ? 1 : 0;
+  score += f.international ? 1 : 0;
+  return score;
+}
+
+// Differentiators: what sets this option apart from the field. A
+// superlative must be uniquely held; a binary feature counts when at
+// most half of the options have it.
+function differentiators(o, options, cheapest) {
+  const d = [];
+  if (o === cheapest) d.push("Cheapest overall");
+  const others = options.filter((x) => x !== o);
+  if (others.length === 0) return d;
+
+  const premium = (r) => {
+    const f = r.plan.features || {};
+    return f.premiumData === "unlimited" ? Infinity : f.premiumData || 0;
+  };
+  const hotspot = (r) => (r.plan.features && r.plan.features.hotspotGB) || 0;
+
+  if (premium(o) > 0 && others.every((x) => premium(x) < premium(o))) d.push("Most priority data");
+  if (hotspot(o) > 0 && others.every((x) => hotspot(x) < hotspot(o))) d.push("Most high-speed hotspot");
+  if (o.qci && others.every((x) => !x.qci || x.qci.value > o.qci.value)) d.push("Best network priority");
+  if (o.creditsApplied > 0 && others.every((x) => x.creditsApplied < o.creditsApplied)) d.push("Largest promo credits");
+
+  const minority = (pred, label) => {
+    if (pred(o) && options.filter(pred).length * 2 <= options.length) d.push(label);
+  };
+  minority((r) => !!(r.plan.features && r.plan.features.international), "International included");
+  minority((r) => !!r.plan.taxesIncluded, "Taxes & fees included");
+  minority((r) => !!(r.plan.features && r.plan.features.priceGuaranteeYears), "5-year price lock");
+  minority((r) => r.pathKey !== "byod" && r.devicePaid24 > 0 && r.owedAt24 === 0, "Device paid off within 24 months");
+  minority((r) => r.pathKey !== "byod" && r.devicePaid24 > 0 && r.upfront === 0, "Nothing due upfront");
+
+  return d;
+}
+
+// Reduce a computeScenarios result to one option per plan (that plan's
+// best path; the BYOD rows when no devices are in play), classified as
+// cheapest (lowest true cost) and best (highest featureScore, tie
+// broken by lower true cost), each carrying its differentiators.
+// Options with a differentiator rank above options without one; within
+// each group, cheaper ranks higher.
+function classifyResults(result) {
+  const rows = result.rows;
+  const options = rows.some((r) => r.bestForPlan) ? rows.filter((r) => r.bestForPlan) : rows.slice();
+  if (options.length === 0) return { options: [], cheapest: null, best: null };
+
+  // rows are sorted by effective24, so the first is the cheapest and the
+  // first max-score option is the cheapest among ties.
+  const cheapest = options[0];
+  let best = options[0];
+  let bestScore = featureScore(options[0].plan);
+  for (const o of options) {
+    const s = featureScore(o.plan);
+    if (s > bestScore) {
+      best = o;
+      bestScore = s;
+    }
+  }
+  for (const o of options) o.diffs = differentiators(o, options, cheapest);
+  const ranked = [...options].sort(
+    (a, b) => (b.diffs.length > 0 ? 1 : 0) - (a.diffs.length > 0 ? 1 : 0)
+  );
+  return { options: ranked, cheapest, best };
+}
+
+// --------------------------------------------------- Current state
+
+// Savings over the 24-month window versus what the user pays today for
+// service alone. Positive = the option costs less than staying put.
+// Note the comparison is service-only today vs. all-in option cost —
+// the UI labels it that way.
+function savingsVsCurrent(option, currentMonthly) {
+  return currentMonthly * 24 - option.effective24;
+}
+
+// The current phone's age drives the suggested trade-in tier, so the
+// flow can prefill the answer instead of asking twice.
+function suggestTradeIn(phoneAge) {
+  return { under2: "recent", twoToFour: "older", overFour: "none", none: "none" }[phoneAge] || "none";
+}
+
 if (typeof module !== "undefined") {
-  module.exports = { TIER_RANK, money, money2, findPromo, matchesNeeds, lineCost, planCost24, computeScenarios };
+  module.exports = { TIER_RANK, money, money2, findPromo, matchesNeeds, lineCost, planCost24, computeScenarios, featureScore, classifyResults, savingsVsCurrent, suggestTradeIn };
 }

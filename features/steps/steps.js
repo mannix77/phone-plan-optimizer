@@ -325,3 +325,82 @@ Then("the device catalog includes at least {int} devices from at least {int} mak
   const makers = new Set(offers.DEVICES.map((d) => d.maker));
   assert.ok(makers.size >= minMakers, `only ${makers.size} makers: ${[...makers].join(", ")}`);
 });
+
+// -------------------------------------------- Result classification
+
+const optKey = (o) => `${o.plan.carrier} ${o.plan.name}`;
+
+When("the results are classified", function () {
+  const result = engine.computeScenarios(this.data, this.input);
+  this.classified = engine.classifyResults(result);
+});
+
+function optionFor(classified, key) {
+  const o = classified.options.find((o) => optKey(o) === key);
+  assert.ok(o, `no option for plan "${key}"`);
+  return o;
+}
+
+Then("the cheapest option is {string}", function (key) {
+  assert.strictEqual(optKey(this.classified.cheapest), key);
+});
+
+Then("the best option is {string}", function (key) {
+  assert.strictEqual(optKey(this.classified.best), key);
+});
+
+Then("the best option is not the cheapest option", function () {
+  assert.notStrictEqual(this.classified.best, this.classified.cheapest);
+});
+
+Then("the {string} option carries the {string} differentiator", function (key, diff) {
+  const o = optionFor(this.classified, key);
+  assert.ok(o.diffs.includes(diff), `${key} diffs are: ${o.diffs.join(", ") || "(none)"}`);
+});
+
+Then("the classification has exactly one option per plan", function () {
+  const seen = new Set();
+  for (const o of this.classified.options) {
+    assert.ok(!seen.has(o.plan.id), `plan ${o.plan.id} appears twice`);
+    seen.add(o.plan.id);
+  }
+  const expected = offers.PLANS.filter((p) => !p.mvno || this.input.includeMvnos).length;
+  assert.strictEqual(seen.size, expected);
+});
+
+Then("every option with differentiators ranks above every option without", function () {
+  let seenUndifferentiated = false;
+  for (const o of this.classified.options) {
+    if (o.diffs.length === 0) seenUndifferentiated = true;
+    else assert.ok(!seenUndifferentiated, `differentiated option ${optKey(o)} ranks below an undifferentiated one`);
+  }
+});
+
+Then("within each differentiation group the options are sorted by true cost ascending", function () {
+  for (const group of [this.classified.options.filter((o) => o.diffs.length > 0), this.classified.options.filter((o) => o.diffs.length === 0)]) {
+    for (let i = 1; i < group.length; i++) {
+      assert.ok(group[i].effective24 >= group[i - 1].effective24 - CLOSE, `group out of cost order at ${optKey(group[i])}`);
+    }
+  }
+});
+
+// ------------------------------------------------------ Current state
+
+Given("the user currently pays {float} per month for service", function (monthly) {
+  this.currentMonthly = monthly;
+});
+
+Then("every option's savings versus today equals {int} minus its true cost", function (baseline) {
+  assert.strictEqual(this.currentMonthly * 24, baseline, "scenario baseline mismatch");
+  for (const o of this.classified.options) {
+    assertClose(
+      engine.savingsVsCurrent(o, this.currentMonthly),
+      baseline - o.effective24,
+      `savings of ${optKey(o)}`
+    );
+  }
+});
+
+Then("a current phone that is {string} suggests the {string} trade-in", function (age, tradeIn) {
+  assert.strictEqual(engine.suggestTradeIn(age), tradeIn);
+});
