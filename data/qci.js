@@ -40,6 +40,9 @@ const QCI_BY_PLAN = {
   "tmo-beyond": { value: 6, note: "T-Mobile's top network priority." },
   "mint": { value: 7, note: "T-Mobile MVNOs like Mint ride at QCI 7 — same as Essentials and Metro." },
   "metro": { value: 7, note: "Metro rides at QCI 7 — same tier as T-Mobile Essentials." },
+  "fi-essentials": { value: 6, note: "Google Fi rides at QCI 6 on T-Mobile — the same top priority as T-Mobile's own Experience plans." },
+  "fi-standard": { value: 6, note: "Google Fi rides at QCI 6 on T-Mobile — the same top priority as T-Mobile's own Experience plans." },
+  "fi-premium": { value: 6, note: "Google Fi rides at QCI 6 on T-Mobile — the same top priority as T-Mobile's own Experience plans." },
 
   // AT&T network: postpaid tiers carry priority-data allotments; Cricket mostly QCI 9
   "att-value": { value: 8, note: "Priority (QCI 8) for the plan's 5GB premium-data allotment, then deprioritized (QCI 9).", allotment: true },
