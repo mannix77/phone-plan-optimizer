@@ -1,5 +1,16 @@
 # phone-plan-optimizer
 
+## Continuous Delivery policy (required)
+
+Small changes, tested, deployed — always:
+
+1. One small change per branch and PR. Do not accumulate features on a
+   branch; a PR that grows past one coherent change gets split.
+2. Every PR runs the full BDD suite in CI and merges only when green.
+3. Merge to `main` deploys to GitHub Pages automatically — merging IS
+   deploying, so merge as soon as a change is green and reviewed, and
+   never let a green PR linger.
+
 ## BDD / TDD policy (required)
 
 Development is test-first. For any change to calculations or behavior:
