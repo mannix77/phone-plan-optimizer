@@ -72,4 +72,10 @@ Feature: Device purchase path calculations
     And the "AT&T Value 2.0" row for "mfr" has owed at month 24 of 0.00
 
   Scenario: The device catalog covers Apple, Samsung, and Google
-    Then the device catalog includes at least 13 devices from at least 3 makers
+    Then the device catalog includes at least 16 devices from at least 4 makers
+
+  Scenario: A device with unverified carrier listings is priced as a manufacturer purchase
+    Given 1 line with a new "Motorola Razr Ultra" and no trade-in
+    When the scenarios are computed
+    Then the "Verizon Unlimited Welcome" row for "carrier" has devices paid of 1499.99
+    And the "Verizon Unlimited Welcome" row for "carrier" has owed at month 24 of 0.00

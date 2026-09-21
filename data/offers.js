@@ -961,6 +961,41 @@ const DEVICES = [
     mfrTradeIn: { older: 400, recent: 720 },
     source: "https://us.smartprix.com/mobiles/samsung-galaxy-z-flip-7-ppd1druu1t76",
   },
+  {
+    id: "s26ultra-512",
+    maker: "Samsung",
+    name: "Galaxy S26 Ultra (512GB)",
+    retail: 1599,
+    soldBy: ["Verizon", "T-Mobile", "AT&T"],
+    mfrFinancing: { months: 24, monthly: 66.63, apr: 0 },
+    mfrTradeIn: { older: 400, recent: 720 },
+    source: "https://www.samsung.com/us/smartphones/galaxy-s26-ultra/buy/galaxy-s26-ultra-512gb-unlocked-sku-sm-s948uzkexaa/",
+  },
+  {
+    id: "zfold7-256",
+    maker: "Samsung",
+    name: "Galaxy Z Fold7",
+    retail: 2119.99,
+    // Carrier listings not verified for the Fold — priced as a
+    // manufacturer purchase until confirmed.
+    soldBy: [],
+    mfrFinancing: { months: 24, monthly: 88.33, apr: 0 },
+    mfrTradeIn: { older: 400, recent: 720 },
+    source: "https://www.phonearena.com/news/best-deals-of-the-week-samsung-galaxy-z-fold-7-galaxy-s25-ultra-motorola-razr-ultra-more_id174389",
+  },
+  {
+    id: "razr-ultra",
+    maker: "Motorola",
+    name: "Motorola Razr Ultra",
+    retail: 1499.99,
+    // Carrier listings not verified; Motorola trade-in values not
+    // published in our sources — estimated, verify.
+    soldBy: [],
+    mfrFinancing: { months: 24, monthly: 62.5, apr: 0 },
+    mfrTradeIn: { older: 100, recent: 300 },
+    tradeInNote: "Motorola trade-in values estimated — not published in our sources; verify.",
+    source: "https://www.phonearena.com/news/best-deals-of-the-week-samsung-galaxy-z-fold-7-galaxy-s25-ultra-motorola-razr-ultra-more_id174389",
+  },
 ];
 
 // Trade-in devices the user can name. `values` carries a manufacturer
