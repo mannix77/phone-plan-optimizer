@@ -38,6 +38,8 @@
   --best-bg: #1f2e27;
 }
 
+[hidden] { display: none !important; }
+
 body {
   background: var(--bg);
   color: var(--ink);
