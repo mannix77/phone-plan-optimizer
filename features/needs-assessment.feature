@@ -57,6 +57,21 @@ Feature: Needs-based plan recommendation
     And the "AT&T Elite 2.0" plan is included
     And the "Verizon Unlimited Ultimate" plan is included
 
+  Scenario: Google Fi's cheaper tiers carry real priority-data allotments
+    Given MVNOs are included
+    And the user needs "moderate" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "Google Fi Unlimited Essentials" plan is included
+    And the "Google Fi Unlimited Standard" plan is included
+
+  Scenario: Google Fi's cheaper tiers drop out under heavy data needs
+    Given MVNOs are included
+    And the user needs "heavy" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "Google Fi Unlimited Essentials" plan is excluded by needs
+    And the "Google Fi Unlimited Standard" plan is excluded by needs
+    And the "Google Fi Unlimited Premium" plan is included
+
   Scenario: MVNOs without priority data are excluded when priority data is needed
     Given MVNOs are included
     And the user needs "moderate" data, 0 GB of hotspot, and no international use
