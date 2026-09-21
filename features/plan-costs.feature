@@ -33,6 +33,11 @@ Feature: 24-month plan cost calculation
     Then the "Google Fi Unlimited Essentials" rows have a 24-month plan cost of 1920.00
     And the "Google Fi Unlimited Essentials" rows are not flagged as estimated
 
+  Scenario: T-Mobile Essentials Saver single-line pricing
+    Given 1 line with no new devices
+    When the scenarios are computed
+    Then the "T-Mobile Essentials Saver" rows have a 24-month plan cost of 1200.00
+
   Scenario: A price the source did not publish is flagged as estimated
     Given 3 lines with no new devices
     When the scenarios are computed

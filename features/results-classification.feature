@@ -13,8 +13,8 @@ Feature: Result classification — best option, cheapest option, differentiators
 
   Scenario: The cheapest option has the lowest true cost and is labeled
     When the results are classified
-    Then the cheapest option is "AT&T Value 2.0"
-    And the "AT&T Value 2.0" option carries the "Cheapest overall" differentiator
+    Then the cheapest option is "T-Mobile Essentials Saver"
+    And the "T-Mobile Essentials Saver" option carries the "Cheapest overall" differentiator
 
   Scenario: The best option maximizes plan features, tie broken by cost
     When the results are classified

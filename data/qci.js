@@ -38,6 +38,7 @@ const QCI_BY_PLAN = {
 
   // T-Mobile network: QCI 6 = postpaid Experience; QCI 7 = Essentials, Metro, T-Mobile MVNOs
   "tmo-essentials": { value: 7, note: "One step below T-Mobile's top postpaid priority." },
+  "tmo-essentials-saver": { value: 7, note: "Essentials-family priority (QCI 7) for the 50GB premium-data allotment.", allotment: true },
   "tmo-more": { value: 6, note: "T-Mobile's top network priority." },
   "tmo-beyond": { value: 6, note: "T-Mobile's top network priority." },
   "mint": { value: 7, note: "T-Mobile MVNOs like Mint ride at QCI 7 — same as Essentials and Metro." },
