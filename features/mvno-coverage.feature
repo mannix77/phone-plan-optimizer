@@ -47,5 +47,21 @@ Feature: MVNO coverage
     When the scenarios are computed
     Then the "Mint Mobile Mint Unlimited" plan is excluded by needs
 
-  Scenario: The catalog covers at least seventeen MVNO plans
-    Then the data includes at least 17 MVNO plans
+  Scenario: US Mobile's Flex and Premium tiers are priced
+    When the scenarios are computed
+    Then the "US Mobile Unlimited Flex" rows have a 24-month plan cost of 420.00
+    And the "US Mobile Unlimited Premium" rows have a 24-month plan cost of 1056.00
+
+  Scenario: US Mobile's tiers split on data priority under heavy needs
+    Given the user needs "heavy" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "US Mobile Unlimited Starter" plan is excluded by needs
+    And the "US Mobile Unlimited Premium" plan is included
+
+  Scenario: US Mobile Starter's published allotment now counts as priority data
+    Given the user needs "moderate" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "US Mobile Unlimited Starter" plan is included
+
+  Scenario: The catalog covers at least nineteen MVNO plans
+    Then the data includes at least 19 MVNO plans

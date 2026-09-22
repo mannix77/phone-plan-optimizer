@@ -55,6 +55,8 @@ const QCI_BY_PLAN = {
   "att-premium": { value: 8, note: "Unlimited premium data at AT&T postpaid priority." },
   "att-elite": { value: 8, note: "Unlimited premium data at AT&T postpaid priority, with Turbo prioritization on top." },
   "us-mobile-starter": { value: 9, note: "Starter tier is deprioritized; US Mobile's Premium tiers ride higher (QCI 8 on Verizon, QCI 7 on T-Mobile) — verify for your network choice." },
+  "us-mobile-flex": { value: 9, note: "Flex is deprioritized like Starter — verify for your network choice." },
+  "us-mobile-premium": { value: 8, note: "Premium rides at postpaid-like priority: QCI 8 on Verizon (Warp), QCI 7 on T-Mobile (Light Speed) — verify for your network choice." },
   "boost-global": { value: 9, note: "Priority on Boost's own network and roaming partners not published — assumed deprioritized; verify." },
   "total-starter": { value: 9, note: "Prepaid MVNO traffic on Verizon is deprioritized." },
   "straight-talk-silver": { value: 9, note: "Prepaid MVNO traffic on Verizon is deprioritized." },
