@@ -75,7 +75,9 @@ const QCI_BY_PLAN = {
   "tmo-student": { value: 7, note: "Essentials-family priority (QCI 7) — verify." },
   "vzw-55plus": { value: 9, note: "Priority level not published — assumed deprioritized like Verizon's base plans; verify." },
   "att-55plus": { value: 9, note: "Priority level not published — assumed deprioritized; verify." },
-  "cricket": { value: 9, note: "Most Cricket lines are deprioritized on AT&T (the Unlimited + 15GB hotspot tier rides at QCI 8)." },
+  "cricket-sensible": { value: 9, note: "Cricket's capped tier is deprioritized on AT&T." },
+  "cricket-smart": { value: 9, note: "Smart Unlimited is deprioritized on AT&T." },
+  "cricket": { value: 8, note: "Supreme Unlimited (successor to Unlimited + 15GB Hotspot) rides at QCI 8 on AT&T — verify." },
 };
 
 // Node export for the BDD suite (features/); ignored in the browser.

@@ -15,7 +15,7 @@ Feature: QCI reference and offer data integrity
       | Visible Visible Unlimited  | 9   |
       | Mint Mobile Mint Unlimited | 7   |
       | Metro Metro Flex Unlimited | 7   |
-      | Cricket Cricket Unlimited  | 9   |
+      | Cricket Supreme Unlimited  | 8   |
 
   Scenario: Every plan has a QCI entry in the reference file
     Then every plan in the offer data has a QCI entry
