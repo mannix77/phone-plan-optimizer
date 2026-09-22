@@ -63,5 +63,17 @@ Feature: MVNO coverage
     When the scenarios are computed
     Then the "US Mobile Unlimited Starter" plan is included
 
-  Scenario: The catalog covers at least nineteen MVNO plans
-    Then the data includes at least 19 MVNO plans
+  Scenario: Boost's tier family is priced with AutoPay rates
+    When the scenarios are computed
+    Then the "Boost Mobile Unlimited" rows have a 24-month plan cost of 600.00
+    And the "Boost Mobile Unlimited+" rows have a 24-month plan cost of 1200.00
+    And the "Boost Mobile Unlimited Premium" rows have a 24-month plan cost of 1440.00
+
+  Scenario: Boost's premium-data allotments drive the needs assessment
+    Given the user needs "moderate" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "Boost Mobile Unlimited" plan is included
+    And the "Boost Mobile Global Connection" plan is included
+
+  Scenario: The catalog covers at least twenty-two MVNO plans
+    Then the data includes at least 22 MVNO plans
