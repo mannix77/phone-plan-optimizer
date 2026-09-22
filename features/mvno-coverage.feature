@@ -107,5 +107,23 @@ Feature: MVNO coverage
     And the "Cricket Supreme Unlimited" rows have a 24-month plan cost of 3120.00
     And the "Cricket Supreme Unlimited" rows are not flagged as estimated
 
-  Scenario: The catalog covers at least twenty-six MVNO plans
-    Then the data includes at least 26 MVNO plans
+  Scenario: T-Mobile Prepaid's 2025 relaunch lineup is priced with AutoPay rates
+    When the scenarios are computed
+    Then the "T-Mobile Prepaid Starter Monthly" rows have a 24-month plan cost of 960.00
+    And the "T-Mobile Prepaid Unlimited Monthly" rows have a 24-month plan cost of 1080.00
+    And the "T-Mobile Prepaid Unlimited Plus Monthly" rows have a 24-month plan cost of 1440.00
+
+  Scenario: T-Mobile Prepaid's premium-data allotment drives the needs assessment
+    Given the user needs "moderate" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "T-Mobile Prepaid Starter Monthly" plan is excluded by needs
+    And the "T-Mobile Prepaid Unlimited Monthly" plan is included
+
+  Scenario: T-Mobile Prepaid Unlimited Plus's international perk counts for the needs assessment
+    Given the user needs "light" data, 0 GB of hotspot, and international use
+    When the scenarios are computed
+    Then the "T-Mobile Prepaid Unlimited Monthly" plan is excluded by needs
+    And the "T-Mobile Prepaid Unlimited Plus Monthly" plan is included
+
+  Scenario: The catalog covers at least twenty-nine MVNO plans
+    Then the data includes at least 29 MVNO plans
