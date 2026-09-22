@@ -72,6 +72,16 @@ Feature: Needs-based plan recommendation
     And the "Google Fi Unlimited Standard" plan is excluded by needs
     And the "Google Fi Unlimited Premium" plan is included
 
+  Scenario: Essentials Saver's 50GB allotment sits between moderate and heavy
+    Given the user needs "moderate" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "T-Mobile Essentials Saver" plan is included
+
+  Scenario: Essentials Saver drops out under heavy data needs
+    Given the user needs "heavy" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "T-Mobile Essentials Saver" plan is excluded by needs
+
   Scenario: MVNOs without priority data are excluded when priority data is needed
     Given MVNOs are included
     And the user needs "moderate" data, 0 GB of hotspot, and no international use
