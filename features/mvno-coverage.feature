@@ -30,5 +30,22 @@ Feature: MVNO coverage
     And the "Visible Visible+" plan is included
     And the "Visible Visible+ Pro" plan is included
 
-  Scenario: The catalog covers at least fourteen MVNO plans
-    Then the data includes at least 14 MVNO plans
+  Scenario: Mint's capped tiers are priced with the intro rate honored
+    When the scenarios are computed
+    Then the "Mint Mobile Mint 6GB" rows have a 24-month plan cost of 360.00
+    And the "Mint Mobile Mint 17GB" rows have a 24-month plan cost of 420.00
+    And the "Mint Mobile Mint 23GB" rows have a 24-month plan cost of 480.00
+
+  Scenario: Mint's data caps drive the needs assessment
+    Given the user needs "moderate" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "Mint Mobile Mint 23GB" plan is excluded by needs
+    And the "Mint Mobile Mint Unlimited" plan is included
+
+  Scenario: Mint Unlimited's soft cap rules it out for heavy data use
+    Given the user needs "heavy" data, 0 GB of hotspot, and no international use
+    When the scenarios are computed
+    Then the "Mint Mobile Mint Unlimited" plan is excluded by needs
+
+  Scenario: The catalog covers at least seventeen MVNO plans
+    Then the data includes at least 17 MVNO plans
